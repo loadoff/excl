@@ -33,17 +33,17 @@ func TestSetData(t *testing.T) {
 	styles := &Styles{}
 	err := styles.setData()
 	if err == nil {
-		t.Error("error should be occured because worksheet tag is not exist.")
+		t.Error("error should be occurred because worksheet tag is not exist.")
 	}
 	styles.styles = &Tag{}
 	err = styles.setData()
 	if err == nil {
-		t.Error("error should be occured because worksheet tag is not exist.")
+		t.Error("error should be occurred because worksheet tag is not exist.")
 	}
 	styles.styles = &Tag{Name: xml.Name{Local: "styleSheet"}}
 	err = styles.setData()
 	if err != nil {
-		t.Error("error should not be occuerd.", err.Error())
+		t.Error("error should not be occurred.", err.Error())
 	}
 	if styles.numFmts == nil {
 		t.Error("numFmts should be exists.")
@@ -67,7 +67,7 @@ func TestSetData(t *testing.T) {
 	tag.Children = append(tag.Children, extLst)
 	err = styles.setData()
 	if err != nil {
-		t.Error("error should not be occuerd.", err.Error())
+		t.Error("error should not be occurred.", err.Error())
 	}
 }
 
