@@ -229,10 +229,11 @@ func (workbook *Workbook) openWorkbook() error {
 	if err != nil {
 		return err
 	}
-	for _, sheet := range val.Sheets.Sheetlist {
+	for i, _ := range val.Sheets.Sheetlist {
+		sheet := &val.Sheets.Sheetlist[i]
 		workbook.sheets = append(workbook.sheets,
 			&Sheet{
-				xml:           &sheet,
+				xml:           sheet,
 				Styles:        workbook.styles,
 				sharedStrings: workbook.SharedStrings,
 			})
