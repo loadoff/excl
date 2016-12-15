@@ -230,7 +230,7 @@ func (workbook *Workbook) openWorkbook() error {
 		return err
 	}
 	for i, _ := range val.Sheets.Sheetlist {
-    sheet := &val.Sheets.Sheetlist[i]
+		sheet := &val.Sheets.Sheetlist[i]
 		workbook.sheets = append(workbook.sheets,
 			&Sheet{
 				xml:           sheet,

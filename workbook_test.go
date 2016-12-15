@@ -168,7 +168,7 @@ func TestOpenSheet(t *testing.T) {
 		t.Error("Sheet1 should be exist.")
 	} else if sheet != workbook.sheets[0] {
 		t.Error("Sheet1 should be same as workbook sheet1.")
-  }
+	}
 	if _, err := workbook.OpenSheet("Sheet2"); err != nil {
 		t.Error("Sheet2 should be created. [", err.Error(), "]")
 	}
