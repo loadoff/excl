@@ -13,7 +13,7 @@ type Tag struct {
 	XmlnsList []xml.Attr
 }
 
-// MarshalXML タグを作成しなおす
+// MarshalXML タグからXMLを作成しなおす
 func (t *Tag) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name = t.Name
 	start.Attr = t.Attr

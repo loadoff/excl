@@ -20,7 +20,7 @@ w, _ := excl.NewWorkbook("path/to/read.xlsx", "path/to/expand", "path/to/write.x
 // Execlブックを開く
 w.Open()
 // シートを開く
-s, _ := w.OpenSheet("sheet1")
+s, _ := w.OpenSheet("Sheet1")
 // 一行目を取得
 r := s.GetRow(1)
 // 1列目のセルを取得

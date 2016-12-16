@@ -45,8 +45,8 @@ func TestSetData(t *testing.T) {
 	if err != nil {
 		t.Error("error should not be occurred.", err.Error())
 	}
-	if styles.numFmts == nil {
-		t.Error("numFmts should be exists.")
+	if styles.numFmtNumber != defaultMaxNumfmt {
+		t.Error("styles.numFmtNumber should be ", defaultMaxNumfmt, " but ", styles.numFmtNumber)
 	}
 	fonts := &Tag{Name: xml.Name{Local: "fonts"}}
 	fills := &Tag{Name: xml.Name{Local: "fills"}}

@@ -20,10 +20,22 @@ type Styles struct {
 	borders      *Tag
 	cellStyleXfs *Tag
 	cellXfs      *Tag
-	cellStyles   *Tag
-	dxfs         *Tag
-	extLst       *Tag
 	numFmtNumber int
+}
+
+// Style セルの書式情報
+type Style struct {
+	numFmt            int
+	font              int
+	fill              int
+	border            int
+	xfID              int
+	applyNumberFormat int
+	applyFont         int
+	applyFill         int
+	applyBorder       int
+	applyAlignment    int
+	applyProtection   int
 }
 
 // OpenStyles styles.xmlファイルを開く
@@ -57,7 +69,7 @@ func (styles *Styles) Close() error {
 	}
 	defer f.Close()
 	f.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
-	err = xml.NewEncoder(f).Encode(styles.styles)
+	err = xml.NewEncoder(f).Encode(styles)
 	if err != nil {
 		return err
 	}
@@ -87,20 +99,13 @@ func (styles *Styles) setData() error {
 				styles.cellStyleXfs = tag
 			} else if tag.Name.Local == "cellXfs" {
 				styles.cellXfs = tag
-			} else if tag.Name.Local == "cellStyles" {
-				styles.cellStyles = tag
-			} else if tag.Name.Local == "dxfs" {
-				styles.dxfs = tag
-			} else if tag.Name.Local == "extLst" {
-				styles.extLst = tag
 			}
 		}
 	}
-	if styles.numFmts == nil {
-		styles.numFmts = &Tag{Name: xml.Name{Local: "numFmts"}}
-		tag.Children = append([]interface{}{styles.numFmts}, tag.Children...)
+	styles.numFmtNumber = defaultMaxNumfmt
+	if styles.numFmts != nil {
+		styles.setNumFmtNumber()
 	}
-	styles.setNumFmtNumber()
 	return nil
 }
 
@@ -125,6 +130,9 @@ func (styles *Styles) setNumFmtNumber() {
 
 // SetNumFmt 数値フォーマットをセットする
 func (styles *Styles) SetNumFmt(format string) int {
+	if styles.numFmts == nil {
+		styles.numFmts = &Tag{Name: xml.Name{Local: "numFmts"}}
+	}
 	styles.numFmtNumber++
 	tag := &Tag{Name: xml.Name{Local: "numFmt"}}
 	tag.setAttr("numFmtId", strconv.Itoa(styles.numFmtNumber))
@@ -193,4 +201,53 @@ func (styles *Styles) getCellXfs(index int) *Tag {
 		return styles.cellXfs.Children[index].(*Tag)
 	}
 	return nil
+}
+
+// MarshalXML stylesからXMLを作り直す
+func (styles *Styles) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name = styles.styles.Name
+	start.Attr = styles.styles.Attr
+	e.EncodeToken(start)
+	if styles.numFmts != nil {
+		e.Encode(styles.numFmts)
+	}
+	if styles.fonts != nil {
+		e.Encode(styles.fonts)
+	}
+	if styles.fills != nil {
+		e.Encode(styles.fills)
+	}
+	if styles.borders != nil {
+		e.Encode(styles.borders)
+	}
+	if styles.cellStyleXfs != nil {
+		e.Encode(styles.cellStyleXfs)
+	}
+	if styles.cellXfs != nil {
+		e.Encode(styles.cellXfs)
+	}
+	outputsList := []string{"numFmts", "fonts", "fills", "borders", "cellStyleXfs", "cellXfs"}
+	for _, v := range styles.styles.Children {
+		switch v.(type) {
+		case *Tag:
+			child := v.(*Tag)
+			if !IsExistString(outputsList, child.Name.Local) {
+				if err := e.Encode(child); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	e.EncodeToken(start.End())
+	return nil
+}
+
+// IsExistString 配列内に文字列が存在するかを確認する
+func IsExistString(strs []string, str string) bool {
+	for _, s := range strs {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }

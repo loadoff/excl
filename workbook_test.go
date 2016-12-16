@@ -54,6 +54,7 @@ func TestFileDirExist(t *testing.T) {
 }
 
 func TestOpenWorkbook(t *testing.T) {
+	var err error
 	os.MkdirAll("temp/out", 0755)
 	defer os.RemoveAll("temp/out")
 	workbook, _ := NewWorkbook("temp/test.xlsx", "temp/out", "temp/out/test.xlsx")
@@ -64,7 +65,10 @@ func TestOpenWorkbook(t *testing.T) {
 	if ok := isFileExist(filepath.Join(workbook.TempPath, "[Content_Types].xml")); !ok {
 		t.Error("[Content_Types].xml should be exists.")
 	}
-	workbook.Close()
+	err = workbook.Close()
+	if err != nil {
+		t.Error("Close should be succeed.", err.Error())
+	}
 	if ok := isFileExist(filepath.Join(workbook.TempPath, "[Content_Types].xml")); ok {
 		t.Error("[Content_Types].xml should be deleted.")
 	}
@@ -72,7 +76,7 @@ func TestOpenWorkbook(t *testing.T) {
 		t.Error("test.xml should be created.")
 	}
 	// error patern
-	_, err := NewWorkbook("no/path/excel.xlsx", "temp/out", "temp/out/test.xlsx")
+	_, err = NewWorkbook("no/path/excel.xlsx", "temp/out", "temp/out/test.xlsx")
 	if err == nil {
 		t.Error("error should be happen.")
 	}
@@ -166,8 +170,6 @@ func TestOpenSheet(t *testing.T) {
 	sheet, _ := workbook.OpenSheet("Sheet1")
 	if sheet == nil {
 		t.Error("Sheet1 should be exist.")
-	} else if sheet != workbook.sheets[0] {
-		t.Error("Sheet1 should be same as workbook sheet1.")
 	}
 	if _, err := workbook.OpenSheet("Sheet2"); err != nil {
 		t.Error("Sheet2 should be created. [", err.Error(), "]")
