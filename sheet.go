@@ -35,6 +35,7 @@ type SheetXML struct {
 	RID     string   `xml:"id,attr"`
 }
 
+// ColsStyle 列のスタイル情報
 type ColsStyle struct {
 	min   int
 	max   int
@@ -133,6 +134,7 @@ func (sheet *Sheet) setData(tag *Tag) error {
 								return errors.New("The file [" + sheet.sheetPath + "] is currupt.")
 							}
 							newRow.colsStyles = sheet.colsStyles
+							newRow.styles = sheet.Styles
 							sheet.Rows = append(sheet.Rows, newRow)
 							sheet.maxRow = newRow.rowID
 						}
@@ -210,6 +212,7 @@ func (sheet *Sheet) GetRow(rowNo int) *Row {
 	}
 	row := NewRow(tag, sheet.sharedStrings)
 	row.colsStyles = sheet.colsStyles
+	row.styles = sheet.Styles
 	added := false
 	rows := make([]*Row, len(sheet.Rows)+1)
 	for i := 0; i < len(sheet.Rows); i++ {
@@ -234,6 +237,7 @@ func (sheet *Sheet) GetRow(rowNo int) *Row {
 func (sheet *Sheet) OutputAll() {
 	for _, row := range sheet.Rows {
 		if row != nil {
+			row.resetStyleIndex()
 			xml.NewEncoder(sheet.tempFile).Encode(row)
 		}
 	}
@@ -250,6 +254,7 @@ func (sheet *Sheet) OutputThroughRowNo(rowNo int) {
 		if rowNo < sheet.Rows[i].rowID {
 			break
 		}
+		sheet.Rows[i].resetStyleIndex()
 		xml.NewEncoder(sheet.tempFile).Encode(sheet.Rows[i])
 	}
 	sheet.Rows = sheet.Rows[i:]

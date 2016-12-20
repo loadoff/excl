@@ -17,6 +17,7 @@ type Row struct {
 	style         string
 	minColNo      int
 	maxColNo      int
+	styles        *Styles
 }
 
 // NewRow は新しく行を追加する際に使用する
@@ -37,6 +38,7 @@ func NewRow(tag *Tag, sharedStrings *SharedStrings) *Row {
 				if cell == nil {
 					return nil
 				}
+				cell.styles = row.styles
 				row.cells = append(row.cells, cell)
 				row.maxColNo = cell.colNo
 				if row.minColNo == 0 {
@@ -74,18 +76,18 @@ func (row *Row) CreateCells(from int, to int) []*Cell {
 			Name: xml.Name{Local: "c"},
 			Attr: attr,
 		}
-		style := ""
+		style := 0
 		if row.style != "" {
-			style = row.style
+			style, _ = strconv.Atoi(row.style)
 		} else {
 			for _, colStyle := range row.colsStyles {
 				if i <= colStyle.min && colStyle.max <= i {
-					style = colStyle.style
+					style, _ = strconv.Atoi(colStyle.style)
 					break
 				}
 			}
 		}
-		cells[i-1] = &Cell{cell: tag, colNo: i, sharedStrings: row.sharedStrings, style: style}
+		cells[i-1] = &Cell{cell: tag, colNo: i, sharedStrings: row.sharedStrings, styleIndex: style}
 	}
 	row.cells = cells
 	return row.cells
@@ -131,6 +133,7 @@ func (row *Row) GetCell(colNo int) *Cell {
 		row.row.Children = children
 	}
 	cell := NewCell(tag, row.sharedStrings)
+	cell.styles = row.styles
 	cells := make([]*Cell, len(row.cells)+1)
 	added := false
 	for index, c := range row.cells {
@@ -194,4 +197,10 @@ func (row *Row) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	}
 	e.EncodeToken(start.End())
 	return nil
+}
+
+func (row *Row) resetStyleIndex() {
+	for _, cell := range row.cells {
+		cell.resetStyleIndex()
+	}
 }
