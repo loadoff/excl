@@ -97,10 +97,10 @@ func separateTag() *Tag {
 // setAttr 要素をセットする。要素がある場合は上書きする
 // ない場合は追加する
 func (t *Tag) setAttr(name string, val string) xml.Attr {
-	for _, attr := range t.Attr {
+	for index, attr := range t.Attr {
 		if attr.Name.Local == name {
-			attr.Value = val
-			return attr
+			t.Attr[index].Value = val
+			return t.Attr[index]
 		}
 	}
 	attr := xml.Attr{
@@ -115,7 +115,7 @@ func (t *Tag) setAttr(name string, val string) xml.Attr {
 func (t *Tag) deleteAttr(name string) {
 	for i := 0; i < len(t.Attr); i++ {
 		attr := t.Attr[i]
-		if attr.Name.Local == "t" {
+		if attr.Name.Local == name {
 			t.Attr = append(t.Attr[:i], t.Attr[i+1:]...)
 			break
 		}

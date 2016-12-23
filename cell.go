@@ -19,8 +19,8 @@ type Cell struct {
 }
 
 // NewCell は新しくcellを作成する
-func NewCell(tag *Tag, sharedStrings *SharedStrings) *Cell {
-	cell := &Cell{cell: tag, sharedStrings: sharedStrings, colNo: -1}
+func NewCell(tag *Tag, sharedStrings *SharedStrings, styles *Styles) *Cell {
+	cell := &Cell{cell: tag, sharedStrings: sharedStrings, colNo: -1, styles: styles}
 	r := regexp.MustCompile("^([A-Z]+)[0-9]+$")
 	for _, attr := range tag.Attr {
 		if attr.Name.Local == "r" {

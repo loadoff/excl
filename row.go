@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-// Row は構造体
+// Row 行の構造体
 type Row struct {
 	rowID         int
 	row           *Tag
@@ -21,8 +21,8 @@ type Row struct {
 }
 
 // NewRow は新しく行を追加する際に使用する
-func NewRow(tag *Tag, sharedStrings *SharedStrings) *Row {
-	row := &Row{row: tag, sharedStrings: sharedStrings}
+func NewRow(tag *Tag, sharedStrings *SharedStrings, styles *Styles) *Row {
+	row := &Row{row: tag, sharedStrings: sharedStrings, styles: styles}
 	for _, attr := range tag.Attr {
 		if attr.Name.Local == "r" {
 			row.rowID, _ = strconv.Atoi(attr.Value)
@@ -34,7 +34,7 @@ func NewRow(tag *Tag, sharedStrings *SharedStrings) *Row {
 		switch col := child.(type) {
 		case *Tag:
 			if col.Name.Local == "c" {
-				cell := NewCell(col, sharedStrings)
+				cell := NewCell(col, sharedStrings, styles)
 				if cell == nil {
 					return nil
 				}
@@ -132,8 +132,7 @@ func (row *Row) GetCell(colNo int) *Cell {
 		}
 		row.row.Children = children
 	}
-	cell := NewCell(tag, row.sharedStrings)
-	cell.styles = row.styles
+	cell := NewCell(tag, row.sharedStrings, row.styles)
 	cells := make([]*Cell, len(row.cells)+1)
 	added := false
 	for index, c := range row.cells {

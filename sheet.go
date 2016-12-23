@@ -129,12 +129,11 @@ func (sheet *Sheet) setData(tag *Tag) error {
 					switch row := data.(type) {
 					case *Tag:
 						if row.Name.Local == "row" {
-							newRow := NewRow(row, sheet.sharedStrings)
+							newRow := NewRow(row, sheet.sharedStrings, sheet.Styles)
 							if newRow == nil {
 								return errors.New("The file [" + sheet.sheetPath + "] is currupt.")
 							}
 							newRow.colsStyles = sheet.colsStyles
-							newRow.styles = sheet.Styles
 							sheet.Rows = append(sheet.Rows, newRow)
 							sheet.maxRow = newRow.rowID
 						}
@@ -210,9 +209,8 @@ func (sheet *Sheet) GetRow(rowNo int) *Row {
 		Name: xml.Name{Local: "row"},
 		Attr: attr,
 	}
-	row := NewRow(tag, sheet.sharedStrings)
+	row := NewRow(tag, sheet.sharedStrings, sheet.Styles)
 	row.colsStyles = sheet.colsStyles
-	row.styles = sheet.Styles
 	added := false
 	rows := make([]*Row, len(sheet.Rows)+1)
 	for i := 0; i < len(sheet.Rows); i++ {
