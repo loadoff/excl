@@ -20,10 +20,53 @@ type Styles struct {
 	borders      *Tag
 	cellStyleXfs *Tag
 	cellXfs      *Tag
-	cellStyles   *Tag
-	dxfs         *Tag
-	extLst       *Tag
+	styleList    []*Style
 	numFmtNumber int
+	fontCount    int
+	fillCount    int
+	borderCount  int
+}
+
+// Style セルの書式情報
+type Style struct {
+	xf                *Tag
+	NumFmtID          int
+	FontID            int
+	FillID            int
+	BorderID          int
+	XfID              int
+	applyNumberFormat int
+	applyFont         int
+	applyFill         int
+	applyBorder       int
+	applyAlignment    int
+	applyProtection   int
+	Horizontal        string
+	Vertical          string
+}
+
+// Font フォントの設定
+type Font struct {
+	Size      int
+	Color     string
+	Name      string
+	Bold      bool
+	Italic    bool
+	Underline bool
+}
+
+// BorderSetting 罫線の設定
+type BorderSetting struct {
+	Style string
+	Color string
+}
+
+// Border 罫線の設定
+type Border struct {
+	Left   *BorderSetting
+	Right  *BorderSetting
+	Top    *BorderSetting
+	Bottom *BorderSetting
 }
 
 // OpenStyles styles.xmlファイルを開く
@@ -57,7 +100,7 @@ func (styles *Styles) Close() error {
 	}
 	defer f.Close()
 	f.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
-	err = xml.NewEncoder(f).Encode(styles.styles)
+	err = xml.NewEncoder(f).Encode(styles)
 	if err != nil {
 		return err
 	}
@@ -72,36 +115,89 @@ func (styles *Styles) setData() error {
 	if tag.Name.Local != "styleSheet" {
 		return errors.New("The styles.xml file is currupt.")
 	}
+	styles.numFmtNumber = defaultMaxNumfmt
 	for _, child := range tag.Children {
 		switch tag := child.(type) {
 		case *Tag:
-			if tag.Name.Local == "numFmts" {
+			switch tag.Name.Local {
+			case "numFmts":
 				styles.numFmts = tag
-			} else if tag.Name.Local == "fonts" {
+				styles.setNumFmtNumber()
+			case "fonts":
 				styles.fonts = tag
-			} else if tag.Name.Local == "fills" {
+				styles.setFontCount()
+			case "fills":
 				styles.fills = tag
-			} else if tag.Name.Local == "borders" {
+				styles.setFillCount()
+			case "borders":
 				styles.borders = tag
-			} else if tag.Name.Local == "cellStyleXfs" {
+				styles.setBorderCount()
+			case "cellStyleXfs":
 				styles.cellStyleXfs = tag
-			} else if tag.Name.Local == "cellXfs" {
+			case "cellXfs":
 				styles.cellXfs = tag
-			} else if tag.Name.Local == "cellStyles" {
-				styles.cellStyles = tag
-			} else if tag.Name.Local == "dxfs" {
-				styles.dxfs = tag
-			} else if tag.Name.Local == "extLst" {
-				styles.extLst = tag
+				styles.setStyleList()
 			}
 		}
 	}
-	if styles.numFmts == nil {
-		styles.numFmts = &Tag{Name: xml.Name{Local: "numFmts"}}
-		tag.Children = append([]interface{}{styles.numFmts}, tag.Children...)
-	}
-	styles.setNumFmtNumber()
 	return nil
+}
+
+func (styles *Styles) setStyleList() {
+	for _, child := range styles.cellXfs.Children {
+		switch child.(type) {
+		case *Tag:
+			t := child.(*Tag)
+			if t.Name.Local == "xf" {
+				style := &Style{xf: t}
+				for _, attr := range t.Attr {
+					index, _ := strconv.Atoi(attr.Value)
+					switch attr.Name.Local {
+					case "numFmtId":
+						style.NumFmtID = index
+					case "fontId":
+						style.FontID = index
+					case "fillId":
+						style.FillID = index
+					case "borderId":
+						style.BorderID = index
+					case "applyNumberFormat":
+						style.applyNumberFormat = index
+					case "applyFont":
+						style.applyFont = index
+					case "applyFill":
+						style.applyFill = index
+					case "applyBorder":
+						style.applyBorder = index
+					case "applyAlignment":
+						style.applyAlignment = index
+					case "applyProtection":
+						style.applyProtection = index
+					}
+				}
+				// alignment
+				if style.applyAlignment == 1 {
+					for _, xfChild := range t.Children {
+						switch xfChild.(type) {
+						case *Tag:
+							cTag := xfChild.(*Tag)
+							if cTag.Name.Local == "alignment" {
+								for _, attr := range cTag.Attr {
+									if attr.Name.Local == "horizontal" {
+										style.Horizontal = attr.Value
+									} else if attr.Name.Local == "vertical" {
+										style.Vertical = attr.Value
+									}
+								}
+							}
+							break
+						}
+					}
+				}
+				styles.styleList = append(styles.styleList, style)
+			}
+		}
+	}
 }
 
 // setNumFmtNumber フォーマットID
@@ -123,74 +219,309 @@ func (styles *Styles) setNumFmtNumber() {
 	styles.numFmtNumber = max
 }
 
+func (styles *Styles) setFontCount() {
+	for _, tag := range styles.fonts.Children {
+		switch tag.(type) {
+		case *Tag:
+			if tag.(*Tag).Name.Local == "font" {
+				styles.fontCount++
+			}
+		}
+	}
+}
+
+func (styles *Styles) setFillCount() {
+	for _, tag := range styles.fills.Children {
+		switch tag.(type) {
+		case *Tag:
+			if tag.(*Tag).Name.Local == "fill" {
+				styles.fillCount++
+			}
+		}
+	}
+}
+
+func (styles *Styles) setBorderCount() {
+	for _, tag := range styles.borders.Children {
+		switch tag.(type) {
+		case *Tag:
+			if tag.(*Tag).Name.Local == "border" {
+				styles.borderCount++
+			}
+		}
+	}
+}
+
 // SetNumFmt 数値フォーマットをセットする
 func (styles *Styles) SetNumFmt(format string) int {
-	styles.numFmtNumber++
+	if styles.numFmts == nil {
+		styles.numFmts = &Tag{Name: xml.Name{Local: "numFmts"}}
+	}
 	tag := &Tag{Name: xml.Name{Local: "numFmt"}}
 	tag.setAttr("numFmtId", strconv.Itoa(styles.numFmtNumber))
 	tag.setAttr("formatCode", format)
 	styles.numFmts.Children = append(styles.numFmts.Children, tag)
-	return styles.numFmtNumber
+	styles.numFmtNumber++
+	return styles.numFmtNumber - 1
 }
 
-func (styles *Styles) setCellXfs(numFmtID int, fontID int, fillID int, borderID int, xfID int) int {
+// SetFont フォント情報を追加する
+func (styles *Styles) SetFont(font Font) int {
+	tag := &Tag{Name: xml.Name{Local: "font"}}
+	var t *Tag
+	if font.Size > 0 {
+		t = &Tag{Name: xml.Name{Local: "sz"}}
+		t.setAttr("val", strconv.Itoa(font.Size))
+		tag.Children = append(tag.Children, t)
+	}
+	if font.Name != "" {
+		t = &Tag{Name: xml.Name{Local: "name"}}
+		t.setAttr("val", font.Name)
+		tag.Children = append(tag.Children, t)
+	}
+	if font.Color != "" {
+		t = &Tag{Name: xml.Name{Local: "color"}}
+		t.setAttr("rgb", font.Color)
+		tag.Children = append(tag.Children, t)
+	}
+	if font.Bold {
+		t = &Tag{Name: xml.Name{Local: "b"}}
+		tag.Children = append(tag.Children, t)
+	}
+	if font.Italic {
+		t = &Tag{Name: xml.Name{Local: "i"}}
+		tag.Children = append(tag.Children, t)
+	}
+	if font.Underline {
+		t = &Tag{Name: xml.Name{Local: "u"}}
+		tag.Children = append(tag.Children, t)
+	}
+	styles.fonts.Children = append(styles.fonts.Children, tag)
+	styles.fontCount++
+	return styles.fontCount - 1
+}
+
+// SetBackgroundColor 背景色を追加する
+func (styles *Styles) SetBackgroundColor(color string) int {
+	tag := &Tag{Name: xml.Name{Local: "fill"}}
+	patternFill := &Tag{Name: xml.Name{Local: "patternFill"}}
+	patternFill.setAttr("patternType", "solid")
+	fgColor := &Tag{Name: xml.Name{Local: "fgColor"}}
+	fgColor.setAttr("rgb", color)
+	patternFill.Children = []interface{}{fgColor}
+	tag.Children = []interface{}{patternFill}
+	styles.fills.Children = append(styles.fills.Children, tag)
+	styles.fillCount++
+	return styles.fillCount - 1
+}
+
+// SetBorder 罫線を設定する
+func (styles *Styles) SetBorder(border Border) int {
+	var color *Tag
+	tag := &Tag{Name: xml.Name{Local: "border"}}
+	left := &Tag{Name: xml.Name{Local: "left"}}
+	right := &Tag{Name: xml.Name{Local: "right"}}
+	top := &Tag{Name: xml.Name{Local: "top"}}
+	bottom := &Tag{Name: xml.Name{Local: "bottom"}}
+
+	if border.Left != nil {
+		left.setAttr("style", border.Left.Style)
+		if border.Left.Color != "" {
+			color = &Tag{Name: xml.Name{Local: "color"}}
+			color.setAttr("rgb", border.Left.Color)
+			left.Children = []interface{}{color}
+		}
+	}
+	if border.Right != nil {
+		right.setAttr("style", border.Right.Style)
+		if border.Right.Color != "" {
+			color = &Tag{Name: xml.Name{Local: "color"}}
+			color.setAttr("rgb", border.Right.Color)
+			right.Children = []interface{}{color}
+		}
+	}
+
+	if border.Top != nil {
+		top.setAttr("style", border.Top.Style)
+		if border.Top.Color != "" {
+			color = &Tag{Name: xml.Name{Local: "color"}}
+			color.setAttr("rgb", border.Top.Color)
+			top.Children = []interface{}{color}
+		}
+	}
+	if border.Bottom != nil {
+		bottom.setAttr("style", border.Bottom.Style)
+		if border.Bottom.Color != "" {
+			color = &Tag{Name: xml.Name{Local: "color"}}
+			color.setAttr("rgb", border.Bottom.Color)
+			bottom.Children = []interface{}{color}
+		}
+	}
+
+	tag.Children = append(tag.Children, left)
+	tag.Children = append(tag.Children, right)
+	tag.Children = append(tag.Children, top)
+	tag.Children = append(tag.Children, bottom)
+	styles.borders.Children = append(styles.borders.Children, tag)
+	styles.borderCount++
+	return styles.borderCount - 1
+}
+
+// SetStyle セルの書式を設定
+func (styles *Styles) SetStyle(style *Style) int {
+	// すでに同じ書式が存在する場合はその書式を使用する
+	for index, s := range styles.styleList {
+		if s.NumFmtID == style.NumFmtID &&
+			s.FontID == style.FontID &&
+			s.FillID == style.FillID &&
+			s.BorderID == style.BorderID &&
+			s.XfID == style.XfID &&
+			s.Horizontal == style.Horizontal &&
+			s.Vertical == style.Vertical {
+			return index
+		}
+	}
+	return styles.SetCellXfs(style)
+}
+
+// GetStyle Style構造体を取得する
+func (styles *Styles) GetStyle(index int) *Style {
+	if len(styles.styleList) < index {
+		return nil
+	}
+	return styles.styleList[index]
+}
+
+// SetCellXfs cellXfsにタグを追加する
+func (styles *Styles) SetCellXfs(style *Style) int {
+	s := &Style{
+		NumFmtID:   style.NumFmtID,
+		FontID:     style.FontID,
+		FillID:     style.FillID,
+		XfID:       style.XfID,
+		Horizontal: style.Horizontal,
+		Vertical:   style.Vertical,
+	}
 	attr := []xml.Attr{
 		xml.Attr{
 			Name:  xml.Name{Local: "numFmtId"},
-			Value: strconv.Itoa(numFmtID),
+			Value: strconv.Itoa(style.NumFmtID),
 		},
 		xml.Attr{
 			Name:  xml.Name{Local: "fontId"},
-			Value: strconv.Itoa(fontID),
+			Value: strconv.Itoa(style.FontID),
 		},
 		xml.Attr{
 			Name:  xml.Name{Local: "fillId"},
-			Value: strconv.Itoa(fillID),
+			Value: strconv.Itoa(style.FillID),
 		},
 		xml.Attr{
 			Name:  xml.Name{Local: "borderId"},
-			Value: strconv.Itoa(borderID),
+			Value: strconv.Itoa(style.BorderID),
 		},
 		xml.Attr{
 			Name:  xml.Name{Local: "xfId"},
-			Value: strconv.Itoa(xfID),
+			Value: strconv.Itoa(style.XfID),
 		},
 	}
-	if numFmtID != 0 {
+	if style.NumFmtID != 0 {
 		attr = append(attr, xml.Attr{
 			Name:  xml.Name{Local: "applyNumberFormat"},
 			Value: "1",
 		})
+		s.applyNumberFormat = 1
 	}
-	if fontID != 0 {
+	if style.FontID != 0 {
 		attr = append(attr, xml.Attr{
 			Name:  xml.Name{Local: "applyFont"},
 			Value: "1",
 		})
+		s.applyFont = 1
 	}
-	if fillID != 0 {
+	if style.FillID != 0 {
 		attr = append(attr, xml.Attr{
 			Name:  xml.Name{Local: "applyFill"},
 			Value: "1",
 		})
+		s.applyFill = 1
 	}
-	if borderID != 0 {
+	if style.BorderID != 0 {
 		attr = append(attr, xml.Attr{
 			Name:  xml.Name{Local: "applyBorder"},
 			Value: "1",
 		})
+		s.applyBorder = 1
 	}
 	tag := &Tag{
 		Name: xml.Name{Local: "xf"},
 		Attr: attr,
 	}
+	if style.Horizontal != "" || style.Vertical != "" {
+		alignment := &Tag{Name: xml.Name{Local: "alignment"}}
+		if style.Horizontal != "" {
+			alignment.setAttr("horizontal", style.Horizontal)
+		}
+		if style.Vertical != "" {
+			alignment.setAttr("vertical", style.Vertical)
+		}
+		tag.Children = []interface{}{alignment}
+		tag.Attr = append(tag.Attr, xml.Attr{
+			Name:  xml.Name{Local: "applyAlignment"},
+			Value: "1",
+		})
+		s.applyAlignment = 1
+	}
+	s.xf = tag
 	styles.cellXfs.Children = append(styles.cellXfs.Children, tag)
-	return len(styles.cellXfs.Children) - 1
+	styles.styleList = append(styles.styleList, s)
+	return len(styles.styleList) - 1
 }
 
-func (styles *Styles) getCellXfs(index int) *Tag {
-	if len(styles.cellXfs.Children) < index {
-		return styles.cellXfs.Children[index].(*Tag)
+// MarshalXML stylesからXMLを作り直す
+func (styles *Styles) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name = styles.styles.Name
+	start.Attr = styles.styles.Attr
+	e.EncodeToken(start)
+	if styles.numFmts != nil {
+		e.Encode(styles.numFmts)
 	}
+	if styles.fonts != nil {
+		e.Encode(styles.fonts)
+	}
+	if styles.fills != nil {
+		e.Encode(styles.fills)
+	}
+	if styles.borders != nil {
+		e.Encode(styles.borders)
+	}
+	if styles.cellStyleXfs != nil {
+		e.Encode(styles.cellStyleXfs)
+	}
+	if styles.cellXfs != nil {
+		e.Encode(styles.cellXfs)
+	}
+	outputsList := []string{"numFmts", "fonts", "fills", "borders", "cellStyleXfs", "cellXfs"}
+	for _, v := range styles.styles.Children {
+		switch v.(type) {
+		case *Tag:
+			child := v.(*Tag)
+			if !IsExistString(outputsList, child.Name.Local) {
+				if err := e.Encode(child); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	e.EncodeToken(start.End())
 	return nil
+}
+
+// IsExistString 配列内に文字列が存在するかを確認する
+func IsExistString(strs []string, str string) bool {
+	for _, s := range strs {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }

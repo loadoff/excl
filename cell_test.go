@@ -8,7 +8,7 @@ import (
 
 func TestNewCell(t *testing.T) {
 	tag := &Tag{}
-	cell := NewCell(tag, nil)
+	cell := NewCell(tag, nil, nil)
 	if cell != nil {
 		t.Error("cell should be nil because colNo does not exist.")
 	}
@@ -17,20 +17,20 @@ func TestNewCell(t *testing.T) {
 		Value: "",
 	}
 	tag.Attr = append(tag.Attr, attr)
-	cell = NewCell(tag, nil)
+	cell = NewCell(tag, nil, nil)
 	if cell != nil {
 		t.Error("cell should be nil because colNo is not correct.")
 	}
 	attr.Value = "A1"
 	tag.Attr = []xml.Attr{attr}
-	cell = NewCell(tag, nil)
+	cell = NewCell(tag, nil, nil)
 	if cell == nil {
 		t.Error("cell should be created.")
 	} else if cell.colNo != 1 {
 		t.Error("colNo should be 1 but [", cell.colNo, "]")
 	}
 	tag.setAttr("s", "2")
-	if cell = NewCell(tag, nil); cell == nil {
+	if cell = NewCell(tag, nil, nil); cell == nil {
 		t.Error("cell should be created.")
 	}
 

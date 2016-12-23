@@ -20,7 +20,7 @@ w, _ := excl.NewWorkbook("path/to/read.xlsx", "path/to/expand", "path/to/write.x
 // Execlブックを開く
 w.Open()
 // シートを開く
-s, _ := w.OpenSheet("sheet1")
+s, _ := w.OpenSheet("Sheet1")
 // 一行目を取得
 r := s.GetRow(1)
 // 1列目のセルを取得
@@ -31,6 +31,31 @@ c.SetNumber("10")
 // 2列目のセルにABCDEという文字列を出力
 c = r.SetString("ABCDE", 2)
 
+s.Close()
+w.Close()
+```
+
+セルの書式の設定方法
+```go
+w, _ := excl.NewWorkbook("path/to/read.xlsx", "path/to/expand", "path/to/write.xlsx")
+w.Open()
+s, _ := w.OpenSheet("Sheet1")
+r := s.GetRow(1)
+c := r.GetCell(1)
+c.SetNumber("10000.00")
+// 数値のフォーマットを設定する
+c.SetNumFmt("#,##0.0")
+// フォントの設定
+c.SetFont(excl.Font{Size: 12, Color: "FF00FFFF", Bold: true, Italic: false,Underline: false})
+// 背景色の設定
+c.SetBackgroundColor("FFFF00FF")
+// 罫線の設定
+c.SetBorder(excl.Border{
+	Left:   &excl.BorderSetting{Style: "thin", Color: "FFFFFF00"},
+	Right:  &excl.BorderSetting{Style: "hair"},
+	Top:    &excl.BorderSetting{Style: "dashDotDot"},
+	Bottom: nil,
+})
 s.Close()
 w.Close()
 ```
