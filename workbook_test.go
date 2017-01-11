@@ -17,6 +17,23 @@ func createCurruputXLSX(from string, to string, delfile string) {
 	createZip(to, getFiles("temp/output"), "temp/output")
 }
 
+func TestCreateWorkbook(t *testing.T) {
+	if err := os.Mkdir("temp/out", 0755); err != nil {
+		t.Error(err.Error())
+	}
+	defer os.RemoveAll("temp/out")
+	wb, err := CreateWorkbook("temp/out", "temp/new.xlsx")
+	if err != nil {
+		t.Error("error should not be happen but ", err.Error())
+	}
+	wb.OpenSheet("hello")
+	wb.Close()
+	if !isFileExist("temp/new.xlsx") {
+		t.Error("new.xlsx should be created.")
+	}
+	os.Remove("temp/new.xlsx")
+}
+
 func TestNewWorkbook(t *testing.T) {
 	workbook, err := NewWorkbook("path", "tempPath", "tempPath/text.xlsx")
 	if err == nil {

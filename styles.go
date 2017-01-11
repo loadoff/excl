@@ -69,6 +69,27 @@ type Border struct {
 	Bottom *BorderSetting
 }
 
+// createStyles styles.xmlを作成する
+func createStyles(dir string) error {
+	os.Mkdir(filepath.Join(dir, "xl"), 0755)
+	path := filepath.Join(dir, "xl", "styles.xml")
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+	f.WriteString(`<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x14ac x16r2" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" xmlns:x16r2="http://schemas.microsoft.com/office/spreadsheetml/2015/02/main">`)
+	f.WriteString(`<fonts><font/></fonts>`)
+	f.WriteString(`<fills><fill/></fills>`)
+	f.WriteString(`<borders><border/></borders>`)
+	f.WriteString(`<cellStyleXfs><xf/></cellStyleXfs>`)
+	f.WriteString(`<cellXfs><xf/></cellXfs>`)
+	f.WriteString(`</styleSheet>`)
+	f.Close()
+	return nil
+}
+
 // OpenStyles styles.xmlファイルを開く
 func OpenStyles(dir string) (*Styles, error) {
 	var f *os.File

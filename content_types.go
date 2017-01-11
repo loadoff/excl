@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 )
 
+// ContentTypes ContentTypesの情報を保持
 type ContentTypes struct {
 	path  string
 	types *ContentTypesXML
@@ -31,6 +32,24 @@ type contentDefault struct {
 	XMLName     xml.Name `xml:"Default"`
 	Extension   string   `xml:"Extension,attr"`
 	ContentType string   `xml:"ContentType,attr"`
+}
+
+// createContentTypes [Content_Types].xmlファイルを作成する
+func createContentTypes(dir string) error {
+	path := filepath.Join(dir, "[Content_Types].xml")
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+	f.WriteString(`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`)
+	f.WriteString(`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`)
+	f.WriteString(`<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`)
+	f.WriteString(`<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`)
+	f.WriteString(`</Types>`)
+	f.Close()
+	return nil
 }
 
 // OpenContentTypes [Content_Types].xmlファイルを開き構造体に読み込む

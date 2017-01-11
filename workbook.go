@@ -45,17 +45,57 @@ type sheetsXML struct {
 	Sheetlist []SheetXML `xml:"sheet"`
 }
 
+// CreateWorkbook 新しくワークブックを作成する
+func CreateWorkbook(expand, outputPath string) (*Workbook, error) {
+	if !isDirExist(expand) {
+		return nil, errors.New("Directory[" + expand + "] does not exist.")
+	}
+	dir := filepath.Join(expand, strings.Replace(time.Now().Format("TEMP_20060102030405.000"), ".", "", 1)+random())
+	workbook := &Workbook{Path: "", TempPath: dir, outputPath: outputPath}
+	defer func() {
+		if !workbook.opened {
+			workbook.Close()
+		}
+	}()
+	if err := os.Mkdir(workbook.TempPath, 0755); err != nil {
+		return nil, err
+	}
+	if err := createContentTypes(dir); err != nil {
+		return nil, err
+	}
+	if err := createRels(dir); err != nil {
+		return nil, err
+	}
+	if err := createWorkbook(dir); err != nil {
+		return nil, err
+	}
+	if err := createWorkbookRels(dir); err != nil {
+		return nil, err
+	}
+	if err := createStyles(dir); err != nil {
+		return nil, err
+	}
+	if err := os.Mkdir(filepath.Join(dir, "xl", "worksheets"), 0755); err != nil {
+		return nil, err
+	}
+	if err := workbook.setInfo(); err != nil {
+		return nil, err
+	}
+	workbook.opened = true
+	return workbook, nil
+}
+
 // NewWorkbook は新しいワークブック構造体を作成する
 // path にはワークブックのパス
-// tempPath には展開するパス
-func NewWorkbook(path, tempPath, outputPath string) (*Workbook, error) {
+// expand には展開するパス
+func NewWorkbook(path, expand, outputPath string) (*Workbook, error) {
 	if !isFileExist(path) {
 		return nil, errors.New("Excel file does not exist.")
 	}
-	if !isDirExist(tempPath) {
-		return nil, errors.New("Directory[" + tempPath + "] does not exist.")
+	if !isDirExist(expand) {
+		return nil, errors.New("Directory[" + expand + "] does not exist.")
 	}
-	dir := filepath.Join(tempPath, strings.Replace(time.Now().Format("TEMP_20060102030405.000"), ".", "", 1)+random())
+	dir := filepath.Join(expand, strings.Replace(time.Now().Format("TEMP_20060102030405.000"), ".", "", 1)+random())
 	workbook := &Workbook{Path: path, TempPath: dir, outputPath: outputPath}
 	return workbook, nil
 }
@@ -214,7 +254,42 @@ func (workbook *Workbook) setInfo() error {
 	return nil
 }
 
-// openXML xmlファイルを開きシート情報を取得する
+// createWorkbook workbook.xmlファイルを作成する
+func createWorkbook(dir string) error {
+	os.Mkdir(filepath.Join(dir, "xl"), 0755)
+	path := filepath.Join(dir, "xl", "workbook.xml")
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+	f.WriteString(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x15" xmlns:x15="http://schemas.microsoft.com/office/spreadsheetml/2010/11/main">`)
+	f.WriteString(`<sheets/>`)
+	f.WriteString(`</workbook>`)
+	f.Close()
+
+	return nil
+}
+
+// createRels .relsファイルを作成する
+func createRels(dir string) error {
+	os.Mkdir(filepath.Join(dir, "_rels"), 0755)
+	path := filepath.Join(dir, "_rels", ".rels")
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+	f.WriteString(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
+	f.WriteString(`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>`)
+	f.WriteString(`</Relationships>`)
+	f.Close()
+	return nil
+}
+
+// openWorkbook xmlファイルを開きシート情報を取得する
 func (workbook *Workbook) openWorkbook() error {
 	workbookPath := filepath.Join(workbook.TempPath, "xl", "workbook.xml")
 	f, err := os.Open(workbookPath)
@@ -229,7 +304,7 @@ func (workbook *Workbook) openWorkbook() error {
 	if err != nil {
 		return err
 	}
-	for i, _ := range val.Sheets.Sheetlist {
+	for i := range val.Sheets.Sheetlist {
 		sheet := &val.Sheets.Sheetlist[i]
 		workbook.sheets = append(workbook.sheets,
 			&Sheet{

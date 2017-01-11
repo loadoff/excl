@@ -31,6 +31,23 @@ type relationship struct {
 	Target  string   `xml:"Target,attr"`
 }
 
+// createWorkbookRels workbook.xml.relsファイルを作成する
+func createWorkbookRels(dir string) error {
+	os.Mkdir(filepath.Join(dir, "xl", "_rels"), 0755)
+	path := filepath.Join(dir, "xl", "_rels", "workbook.xml.rels")
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+	f.WriteString(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
+	f.WriteString(`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`)
+	f.WriteString(`</Relationships>`)
+	f.Close()
+	return nil
+}
+
 // OpenWorkbookRels workbook.xml.relsファイルを開く
 func OpenWorkbookRels(dir string) (*WorkbookRels, error) {
 	path := filepath.Join(dir, "xl", "_rels", "workbook.xml.rels")
