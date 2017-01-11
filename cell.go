@@ -87,39 +87,73 @@ func (cell *Cell) GetStyle() *Style {
 }
 
 // SetNumFmt 数値フォーマット
-func (cell *Cell) SetNumFmt(fmt string) {
+func (cell *Cell) SetNumFmt(fmt string) *Cell {
 	if cell.style == nil {
 		cell.GetStyle()
 	}
 	cell.style.NumFmtID = cell.styles.SetNumFmt(fmt)
 	cell.changed = true
+	return cell
 }
 
 // SetFont フォント情報をセットする
-func (cell *Cell) SetFont(font Font) {
+func (cell *Cell) SetFont(font Font) *Cell {
 	if cell.style == nil {
 		cell.GetStyle()
 	}
 	cell.style.FontID = cell.styles.SetFont(font)
 	cell.changed = true
+	return cell
 }
 
 // SetBackgroundColor 背景色をセットする
-func (cell *Cell) SetBackgroundColor(color string) {
+func (cell *Cell) SetBackgroundColor(color string) *Cell {
 	if cell.style == nil {
 		cell.GetStyle()
 	}
 	cell.style.FillID = cell.styles.SetBackgroundColor(color)
 	cell.changed = true
+	return cell
 }
 
 // SetBorder 罫線情報をセットする
-func (cell *Cell) SetBorder(border Border) {
+func (cell *Cell) SetBorder(border Border) *Cell {
 	if cell.style == nil {
 		cell.GetStyle()
 	}
 	cell.style.BorderID = cell.styles.SetBorder(border)
 	cell.changed = true
+	return cell
+}
+
+// SetStyle 数値フォーマットIDをセット
+func (cell *Cell) SetStyle(style *Style) *Cell {
+	if style == nil {
+		return cell
+	}
+	if cell.style == nil {
+		cell.GetStyle()
+	}
+	if style.NumFmtID > 0 {
+		cell.style.NumFmtID = style.NumFmtID
+	}
+	if style.FontID > 0 {
+		cell.style.FontID = style.FontID
+	}
+	if style.FillID > 0 {
+		cell.style.FillID = style.FillID
+	}
+	if style.BorderID > 0 {
+		cell.style.BorderID = style.BorderID
+	}
+	if style.Horizontal != "" {
+		cell.style.Horizontal = style.Horizontal
+	}
+	if style.Vertical != "" {
+		cell.style.Vertical = style.Vertical
+	}
+	cell.changed = true
+	return cell
 }
 
 func (cell *Cell) resetStyleIndex() {
