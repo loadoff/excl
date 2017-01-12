@@ -60,6 +60,19 @@ s.Close()
 w.Close()
 ```
 
+グリッド線の表示非表示
+```go
+w, _ := excl.NewWorkbook("path/to/read.xlsx", "path/to/expand", "path/to/write.xlsx")
+w.Open()
+s, _ := w.OpenSheet("Sheet1")
+// シートのグリッド線を表示
+s.ShowGridlines(true)
+// シートのグリッド線を非表示
+s.ShowGridlines(false)
+s.Close()
+w.Close()
+```
+
 ## Install
 
 ```bash
