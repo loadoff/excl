@@ -2,6 +2,7 @@ package excl
 
 import (
 	"encoding/xml"
+	"errors"
 	"io"
 )
 
@@ -120,4 +121,13 @@ func (t *Tag) deleteAttr(name string) {
 			break
 		}
 	}
+}
+
+func (t *Tag) getAttr(name string) (string, error) {
+	for _, attr := range t.Attr {
+		if attr.Name.Local == name {
+			return attr.Value, nil
+		}
+	}
+	return "", errors.New("No attr found.")
 }

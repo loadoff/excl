@@ -17,6 +17,7 @@ type Sheet struct {
 	opened        bool
 	Rows          []*Row
 	Styles        *Styles
+	sheetView     *Tag
 	sheetData     *Tag
 	tempFile      *os.File
 	afterString   string
@@ -60,6 +61,7 @@ func (sheet *Sheet) Create(dir string) error {
 	}
 	defer f.Close()
 	f.WriteString(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x14ac" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac">`)
+	f.WriteString(`<sheetViews><sheetView workbookViewId="0"></sheetView></sheetViews>`)
 	f.WriteString("<sheetData></sheetData>")
 	f.WriteString("</worksheet>")
 	f.Close()
@@ -143,6 +145,14 @@ func (sheet *Sheet) setData(tag *Tag) error {
 				break
 			} else if tag.Name.Local == "cols" {
 				sheet.colsStyles = getColsStyles(tag)
+			} else if tag.Name.Local == "sheetViews" {
+				for _, view := range tag.Children {
+					if v, ok := view.(*Tag); ok {
+						if v.Name.Local == "sheetView" {
+							sheet.sheetView = v
+						}
+					}
+				}
 			}
 		}
 	}
@@ -229,6 +239,17 @@ func (sheet *Sheet) GetRow(rowNo int) *Row {
 	}
 	sheet.Rows = rows
 	return row
+}
+
+// ShowGridlines グリッド線の表示非表示
+func (sheet *Sheet) ShowGridlines(show bool) {
+	if sheet.sheetView != nil {
+		if show {
+			sheet.sheetView.setAttr("showGridLines", "1")
+		} else {
+			sheet.sheetView.setAttr("showGridLines", "0")
+		}
+	}
 }
 
 // OutputAll すべて出力する

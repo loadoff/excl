@@ -96,6 +96,29 @@ func TestGetRow(t *testing.T) {
 	}
 }
 
+func TestShowGridlines(t *testing.T) {
+	os.MkdirAll("temp/xl/worksheets", 0755)
+	defer os.RemoveAll("temp/xl")
+	sheet := NewSheet("hoge", 1)
+	sheet.ShowGridlines(true)
+	if sheet.sheetView != nil {
+		t.Error("sheetView should be nil.")
+	}
+	sheet.Create("temp")
+	sheet.ShowGridlines(true)
+	if v, err := sheet.sheetView.getAttr("showGridLines"); err != nil {
+		t.Error("showGridLines should be exist.")
+	} else if v != "1" {
+		t.Error("value should be 1 but ", v)
+	}
+	sheet.ShowGridlines(false)
+	if v, err := sheet.sheetView.getAttr("showGridLines"); err != nil {
+		t.Error("showGridLines should be exist.")
+	} else if v != "0" {
+		t.Error("value should be 0 but ", v)
+	}
+}
+
 // UTF-8 から ShiftJIS
 func utf8ToSjis(str string) (string, error) {
 	ret, err := ioutil.ReadAll(transform.NewReader(strings.NewReader(str), japanese.ShiftJIS.NewEncoder()))
