@@ -75,6 +75,9 @@ func CreateWorkbook(expand, outputPath string) (*Workbook, error) {
 	if err := createStyles(dir); err != nil {
 		return nil, err
 	}
+	if err := createTheme1(dir); err != nil {
+		return nil, err
+	}
 	if err := os.Mkdir(filepath.Join(dir, "xl", "worksheets"), 0755); err != nil {
 		return nil, err
 	}
@@ -210,6 +213,7 @@ func (workbook *Workbook) OpenSheet(name string) (*Sheet, error) {
 	workbook.sheetsTag.Children = append(workbook.sheetsTag.Children, createSheetTag(name, count+1))
 	sheet := NewSheet(sheetName, count)
 	sheet.sharedStrings = workbook.SharedStrings
+	sheet.Styles = workbook.styles
 	if err := sheet.Create(workbook.TempPath); err != nil {
 		return nil, err
 	}
