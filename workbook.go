@@ -142,56 +142,46 @@ func (workbook *Workbook) Open() error {
 
 // Close 操作中のブックを閉じる
 func (workbook *Workbook) Close() error {
-	var err, tempErr error
+	if workbook == nil || !workbook.opened {
+		return nil
+	}
+	var err, sheetErr, ssErr, relsErr, stylesErr, typesErr error
+	var f *os.File
 	defer os.RemoveAll(workbook.TempPath)
-	if workbook.SharedStrings != nil {
-		workbook.SharedStrings.Close()
-		workbook.SharedStrings = nil
-	}
-	if workbook.workbookRels != nil {
-		tempErr = workbook.workbookRels.Close()
-		workbook.workbookRels = nil
-	}
-	err = tempErr
-	if workbook.styles != nil {
-		tempErr = workbook.styles.Close()
-		workbook.styles = nil
-	}
-	if err == nil && tempErr != nil {
-		err = tempErr
-	}
-	if workbook.types != nil {
-		tempErr = workbook.types.Close()
-		workbook.types = nil
-	}
-	if err == nil && tempErr != nil {
-		err = tempErr
-	}
-
 	for _, sheet := range workbook.sheets {
-		if sheet.opened {
-			tempErr = sheet.Close()
-			if err == nil && tempErr != nil {
-				err = tempErr
-			}
+		tempErr := sheet.Close()
+		if sheetErr == nil && tempErr != nil {
+			sheetErr = tempErr
 		}
 	}
-
-	if err == nil {
-		f, err := os.Create(filepath.Join(workbook.TempPath, "xl", "workbook.xml"))
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		f.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
-		if err = xml.NewEncoder(f).Encode(workbook.workbookTag); err != nil {
-			return err
-		}
-		f.Close()
-		createZip(workbook.outputPath, getFiles(workbook.TempPath), workbook.TempPath)
-	}
+	ssErr = workbook.SharedStrings.Close()
+	relsErr = workbook.workbookRels.Close()
+	stylesErr = workbook.styles.Close()
+	typesErr = workbook.types.Close()
 	workbook.opened = false
-	return err
+	if sheetErr != nil {
+		return sheetErr
+	} else if ssErr != nil {
+		return ssErr
+	} else if relsErr != nil {
+		return relsErr
+	} else if stylesErr != nil {
+		return stylesErr
+	} else if typesErr != nil {
+		return typesErr
+	}
+	f, err = os.Create(filepath.Join(workbook.TempPath, "xl", "workbook.xml"))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+	if err = xml.NewEncoder(f).Encode(workbook.workbookTag); err != nil {
+		return err
+	}
+	f.Close()
+	createZip(workbook.outputPath, getFiles(workbook.TempPath), workbook.TempPath)
+	return nil
 }
 
 // OpenSheet 指定されたシートを開く

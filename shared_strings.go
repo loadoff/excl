@@ -75,6 +75,9 @@ func OpenSharedStrings(dir string) (*SharedStrings, error) {
 
 // Close sharedStrings情報をクローズする
 func (ss *SharedStrings) Close() error {
+	if ss == nil {
+		return nil
+	}
 	defer ss.tempFile.Close()
 	defer ss.file.Close()
 	var err error
