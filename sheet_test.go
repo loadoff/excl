@@ -99,7 +99,7 @@ func TestGetRow(t *testing.T) {
 func TestShowGridlines(t *testing.T) {
 	os.MkdirAll("temp/xl/worksheets", 0755)
 	defer os.RemoveAll("temp/xl")
-	sheet := NewSheet("hoge", 1)
+	sheet := NewSheet("hoge", 0)
 	sheet.ShowGridlines(true)
 	if sheet.sheetView != nil {
 		t.Error("sheetView should be nil.")
@@ -111,12 +111,32 @@ func TestShowGridlines(t *testing.T) {
 	} else if v != "1" {
 		t.Error("value should be 1 but ", v)
 	}
+	sheet.Close()
+
+	if b, err := ioutil.ReadFile("temp/xl/worksheets/sheet1.xml"); err != nil {
+		t.Error("sheet1.xml should be readable.", err.Error())
+	} else if string(b) != `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x14ac" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"><sheetViews><sheetView workbookViewId="0" showGridLines="1"></sheetView></sheetViews><sheetData></sheetData></worksheet>` {
+		t.Error("[" + string(b) + "]")
+	}
+	os.Remove("temp/xl/worksheets/sheet1.xml")
+
+	sheet = NewSheet("hoge", 1)
+	sheet.Create("temp")
 	sheet.ShowGridlines(false)
 	if v, err := sheet.sheetView.getAttr("showGridLines"); err != nil {
 		t.Error("showGridLines should be exist.")
 	} else if v != "0" {
 		t.Error("value should be 0 but ", v)
 	}
+	sheet.Close()
+	b, err := ioutil.ReadFile("temp/xl/worksheets/sheet2.xml")
+	if err != nil {
+		t.Error("sheet2.xml should be readable.", err.Error())
+	} else if string(b) != `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x14ac" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"><sheetViews><sheetView workbookViewId="0" showGridLines="0"></sheetView></sheetViews><sheetData></sheetData></worksheet>` {
+		t.Error(string(b))
+	}
+	os.Remove("temp/xl/worksheets/sheet2.xml")
+
 }
 
 // UTF-8 から ShiftJIS

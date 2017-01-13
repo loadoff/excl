@@ -115,6 +115,9 @@ func OpenStyles(dir string) (*Styles, error) {
 
 // Close styles.xmlファイルを閉じる
 func (styles *Styles) Close() error {
+	if styles == nil {
+		return nil
+	}
 	f, err := os.Create(styles.path)
 	if err != nil {
 		return err

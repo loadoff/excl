@@ -74,6 +74,9 @@ func OpenWorkbookRels(dir string) (*WorkbookRels, error) {
 
 // Close workbook.xml.relsファイルを閉じる
 func (wbr *WorkbookRels) Close() error {
+	if wbr == nil {
+		return nil
+	}
 	wbr.setRID()
 	f, err := os.Create(wbr.path)
 	if err != nil {

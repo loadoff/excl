@@ -17,6 +17,7 @@ type Sheet struct {
 	opened        bool
 	Rows          []*Row
 	Styles        *Styles
+	worksheet     *Tag
 	sheetView     *Tag
 	sheetData     *Tag
 	tempFile      *os.File
@@ -87,15 +88,10 @@ func (sheet *Sheet) Open(dir string) error {
 		return err
 	}
 	sheet.setSeparatePoint()
-
-	var b bytes.Buffer
-	xml.NewEncoder(&b).Encode(tag)
-	strs := strings.Split(b.String(), "<separate_tag></separate_tag>")
 	if sheet.tempFile, err = os.Create(sheet.tempSheetPath); err != nil {
 		return err
 	}
-	sheet.tempFile.WriteString(strs[0])
-	sheet.afterString = strs[1]
+	sheet.worksheet = tag
 	sheet.opened = true
 	return nil
 }
@@ -103,7 +99,7 @@ func (sheet *Sheet) Open(dir string) error {
 // Close シートを閉じる
 func (sheet *Sheet) Close() error {
 	var err error
-	if sheet.opened == false {
+	if sheet == nil || sheet.opened == false {
 		return nil
 	}
 	sheet.OutputAll()
@@ -116,6 +112,10 @@ func (sheet *Sheet) Close() error {
 		return err
 	}
 	sheet.opened = false
+	sheet.worksheet = nil
+	sheet.sheetView = nil
+	sheet.sheetData = nil
+	sheet.tempFile = nil
 	return nil
 }
 
@@ -252,8 +252,21 @@ func (sheet *Sheet) ShowGridlines(show bool) {
 	}
 }
 
+func (sheet *Sheet) outputFirst() {
+	var b bytes.Buffer
+	xml.NewEncoder(&b).Encode(sheet.worksheet)
+	strs := strings.Split(b.String(), "<separate_tag></separate_tag>")
+
+	sheet.tempFile.WriteString(strs[0])
+	sheet.afterString = strs[1]
+	sheet.worksheet = nil
+}
+
 // OutputAll すべて出力する
 func (sheet *Sheet) OutputAll() {
+	if sheet.worksheet != nil {
+		sheet.outputFirst()
+	}
 	for _, row := range sheet.Rows {
 		if row != nil {
 			row.resetStyleIndex()
@@ -266,6 +279,9 @@ func (sheet *Sheet) OutputAll() {
 // OutputThroughRowNo rowNoまですべて出力する
 func (sheet *Sheet) OutputThroughRowNo(rowNo int) {
 	var i int
+	if sheet.worksheet != nil {
+		sheet.outputFirst()
+	}
 	for i = 0; i < len(sheet.Rows); i++ {
 		if sheet.Rows[i] == nil {
 			continue

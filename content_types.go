@@ -77,6 +77,9 @@ func OpenContentTypes(dir string) (*ContentTypes, error) {
 
 // Close [Content_Types].xmlファイルを閉じる
 func (types *ContentTypes) Close() error {
+	if types == nil {
+		return nil
+	}
 	f, err := os.Create(types.path)
 	if err != nil {
 		return err
