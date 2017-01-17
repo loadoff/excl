@@ -191,6 +191,14 @@ func TestOpenSheet(t *testing.T) {
 	if _, err := workbook.OpenSheet("Sheet2"); err != nil {
 		t.Error("Sheet2 should be created. [", err.Error(), "]")
 	}
+
+	sheet, _ = workbook.OpenSheet("ペンギンﾍﾟﾝｷﾞﾝAaＡａ0０")
+	sheet.Close()
+	tempSheet, _ := workbook.OpenSheet("ﾍﾟﾝｷﾞﾝペンギンaaaa00")
+	if sheet != tempSheet {
+		t.Error("ペンギンﾍﾟﾝｷﾞﾝAaＡａ0０ sheet should be same as ﾍﾟﾝｷﾞﾝペンギンaaaa00 sheet.")
+	}
+
 	workbook.Close()
 }
 
