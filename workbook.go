@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 // Workbook はワークブック内の情報を格納する
@@ -187,8 +189,10 @@ func (workbook *Workbook) Close() error {
 // OpenSheet 指定されたシートを開く
 // 存在しない場合は作成する
 func (workbook *Workbook) OpenSheet(name string) (*Sheet, error) {
+	compName := strings.ToLower(string(norm.NFKC.Bytes([]byte(name))))
 	for _, sheet := range workbook.sheets {
-		if sheet.xml.Name != name {
+		sheetName := strings.ToLower(string(norm.NFKC.Bytes([]byte(sheet.xml.Name))))
+		if sheetName != compName {
 			continue
 		}
 		err := sheet.Open(workbook.TempPath)
@@ -201,7 +205,7 @@ func (workbook *Workbook) OpenSheet(name string) (*Sheet, error) {
 	sheetName := workbook.types.addSheet()
 	workbook.workbookRels.addSheet(sheetName)
 	workbook.sheetsTag.Children = append(workbook.sheetsTag.Children, createSheetTag(name, count+1))
-	sheet := NewSheet(sheetName, count)
+	sheet := NewSheet(name, count)
 	sheet.sharedStrings = workbook.SharedStrings
 	sheet.Styles = workbook.styles
 	if err := sheet.Create(workbook.TempPath); err != nil {
