@@ -422,6 +422,7 @@ func (styles *Styles) SetCellXfs(style *Style) int {
 		NumFmtID:   style.NumFmtID,
 		FontID:     style.FontID,
 		FillID:     style.FillID,
+		BorderID:   style.BorderID,
 		XfID:       style.XfID,
 		Horizontal: style.Horizontal,
 		Vertical:   style.Vertical,
