@@ -81,7 +81,7 @@ func (row *Row) CreateCells(from int, to int) []*Cell {
 			style, _ = strconv.Atoi(row.style)
 		} else {
 			for _, colStyle := range row.colsStyles {
-				if i <= colStyle.min && colStyle.max <= i {
+				if colStyle.min <= i && i <= colStyle.max {
 					style, _ = strconv.Atoi(colStyle.style)
 					break
 				}
