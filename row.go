@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 )
 
@@ -58,7 +59,7 @@ func (row *Row) CreateCells(from int, to int) []*Cell {
 	cells := make([]*Cell, row.maxColNo)
 	for _, cell := range row.cells {
 		if cell == nil || cell.colNo == 0 {
-			break
+			continue
 		}
 		cells[cell.colNo-1] = cell
 	}
@@ -93,15 +94,21 @@ func (row *Row) CreateCells(from int, to int) []*Cell {
 	return row.cells
 }
 
+// ByCell セルに対するソート用
+type ByCell []*Cell
+
+func (c ByCell) Len() int           { return len(c) }
+func (c ByCell) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c ByCell) Less(i, j int) bool { return c[i].colNo < c[j].colNo }
+
 // GetCell セル番号のセルを取得する
 func (row *Row) GetCell(colNo int) *Cell {
-	var afterTag *Tag
+
 	for _, cell := range row.cells {
 		if cell.colNo == colNo {
 			return cell
 		}
 		if cell.colNo > colNo {
-			afterTag = cell.cell
 			break
 		}
 	}
@@ -114,42 +121,10 @@ func (row *Row) GetCell(colNo int) *Cell {
 	} else if style := getStyleNo(row.colsStyles, int(colNo)); style != "" {
 		tag.setAttr("s", style)
 	}
-	if afterTag == nil {
-		row.row.Children = append(row.row.Children, tag)
-	} else {
-		added := false
-		children := make([]interface{}, len(row.row.Children)+1)
-		for index, child := range row.row.Children {
-			if afterTag == child {
-				children[index] = tag
-				children[index+1] = child
-				added = true
-			} else if added {
-				children[index+1] = child
-			} else {
-				children[index] = child
-			}
-		}
-		row.row.Children = children
-	}
+
 	cell := NewCell(tag, row.sharedStrings, row.styles)
-	cells := make([]*Cell, len(row.cells)+1)
-	added := false
-	for index, c := range row.cells {
-		if c.colNo < colNo {
-			cells[index] = c
-		} else if c.colNo > colNo {
-			if !added {
-				cells[index] = cell
-				added = true
-			}
-			cells[index+1] = c
-		}
-	}
-	if !added {
-		cells[len(row.cells)] = cell
-	}
-	row.cells = cells
+	row.cells = append(row.cells, cell)
+	sort.Sort(ByCell(row.cells))
 	return cell
 }
 
@@ -171,7 +146,7 @@ func ColStringPosition(num int) string {
 	if num <= 26 {
 		return atoz[num-1]
 	}
-	return ColStringPosition(num/26) + atoz[num%26]
+	return ColStringPosition(num/26) + atoz[(num-1)%26]
 }
 
 // ColNumPosition カラム番号をA-Z文字列から取得する
