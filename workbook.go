@@ -29,7 +29,7 @@ type Workbook struct {
 	sheets        []*Sheet
 	SharedStrings *SharedStrings
 	workbookRels  *WorkbookRels
-	styles        *Styles
+	Styles        *Styles
 	outputPath    string
 	workbookTag   *Tag
 	sheetsTag     *Tag
@@ -158,7 +158,7 @@ func (workbook *Workbook) Close() error {
 	}
 	ssErr = workbook.SharedStrings.Close()
 	relsErr = workbook.workbookRels.Close()
-	stylesErr = workbook.styles.Close()
+	stylesErr = workbook.Styles.Close()
 	typesErr = workbook.types.Close()
 	workbook.opened = false
 	if sheetErr != nil {
@@ -207,7 +207,7 @@ func (workbook *Workbook) OpenSheet(name string) (*Sheet, error) {
 	workbook.sheetsTag.Children = append(workbook.sheetsTag.Children, createSheetTag(name, count+1))
 	sheet := NewSheet(name, count)
 	sheet.sharedStrings = workbook.SharedStrings
-	sheet.Styles = workbook.styles
+	sheet.Styles = workbook.Styles
 	if err := sheet.Create(workbook.TempPath); err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func (workbook *Workbook) setInfo() error {
 	if err != nil {
 		return err
 	}
-	workbook.styles, err = OpenStyles(workbook.TempPath)
+	workbook.Styles, err = OpenStyles(workbook.TempPath)
 	if err != nil {
 		return err
 	}
@@ -307,7 +307,7 @@ func (workbook *Workbook) openWorkbook() error {
 		workbook.sheets = append(workbook.sheets,
 			&Sheet{
 				xml:           sheet,
-				Styles:        workbook.styles,
+				Styles:        workbook.Styles,
 				sharedStrings: workbook.SharedStrings,
 			})
 	}

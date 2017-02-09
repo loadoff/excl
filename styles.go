@@ -43,6 +43,7 @@ type Style struct {
 	applyProtection   int
 	Horizontal        string
 	Vertical          string
+	Wrap              int
 }
 
 // Font フォントの設定
@@ -211,6 +212,8 @@ func (styles *Styles) setStyleList() {
 										style.Horizontal = attr.Value
 									} else if attr.Name.Local == "vertical" {
 										style.Vertical = attr.Value
+									} else if attr.Name.Local == "wrapText" {
+										style.Wrap, _ = strconv.Atoi(attr.Value)
 									}
 								}
 							}
@@ -401,7 +404,8 @@ func (styles *Styles) SetStyle(style *Style) int {
 			s.BorderID == style.BorderID &&
 			s.XfID == style.XfID &&
 			s.Horizontal == style.Horizontal &&
-			s.Vertical == style.Vertical {
+			s.Vertical == style.Vertical &&
+			s.Wrap == style.Wrap {
 			return index
 		}
 	}
@@ -410,7 +414,7 @@ func (styles *Styles) SetStyle(style *Style) int {
 
 // GetStyle Style構造体を取得する
 func (styles *Styles) GetStyle(index int) *Style {
-	if len(styles.styleList) < index {
+	if len(styles.styleList) <= index {
 		return nil
 	}
 	return styles.styleList[index]
@@ -426,6 +430,7 @@ func (styles *Styles) SetCellXfs(style *Style) int {
 		XfID:       style.XfID,
 		Horizontal: style.Horizontal,
 		Vertical:   style.Vertical,
+		Wrap:       style.Wrap,
 	}
 	attr := []xml.Attr{
 		xml.Attr{
@@ -481,13 +486,16 @@ func (styles *Styles) SetCellXfs(style *Style) int {
 		Name: xml.Name{Local: "xf"},
 		Attr: attr,
 	}
-	if style.Horizontal != "" || style.Vertical != "" {
+	if style.Horizontal != "" || style.Vertical != "" || style.Wrap != 0 {
 		alignment := &Tag{Name: xml.Name{Local: "alignment"}}
 		if style.Horizontal != "" {
 			alignment.setAttr("horizontal", style.Horizontal)
 		}
 		if style.Vertical != "" {
 			alignment.setAttr("vertical", style.Vertical)
+		}
+		if style.Wrap != 0 {
+			alignment.setAttr("wrapText", strconv.Itoa(style.Wrap))
 		}
 		tag.Children = []interface{}{alignment}
 		tag.Attr = append(tag.Attr, xml.Attr{
