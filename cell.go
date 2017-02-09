@@ -81,6 +81,7 @@ func (cell *Cell) GetStyle() *Style {
 			XfID:       style.XfID,
 			Horizontal: style.Horizontal,
 			Vertical:   style.Vertical,
+			Wrap:       style.Wrap,
 		}
 	}
 	return cell.style
@@ -151,6 +152,9 @@ func (cell *Cell) SetStyle(style *Style) *Cell {
 	}
 	if style.Vertical != "" {
 		cell.style.Vertical = style.Vertical
+	}
+	if style.Wrap != 0 {
+		cell.style.Wrap = style.Wrap
 	}
 	cell.changed = true
 	return cell

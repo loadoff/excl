@@ -83,7 +83,7 @@ func TestSetStyleList(t *testing.T) {
 	if len(styles.styleList) != 0 {
 		t.Error("styleList should be 0 but ", styles.styleList)
 	}
-	r = strings.NewReader(`<cellXfs><xf numFmtId="1" fontId="2" fillId="3" borderId="4" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1" applyProtection="1"><alignment horizontal="left" vertical="top"></alignment></xf></cellXfs>`)
+	r = strings.NewReader(`<cellXfs><xf numFmtId="1" fontId="2" fillId="3" borderId="4" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1" applyProtection="1"><alignment horizontal="left" vertical="top" wrapText="1"></alignment></xf></cellXfs>`)
 	tag = &Tag{}
 	xml.NewDecoder(r).Decode(tag)
 	styles.cellXfs = tag
@@ -114,6 +114,8 @@ func TestSetStyleList(t *testing.T) {
 		t.Error("Horizontal should be left but ", styles.styleList[0].Horizontal)
 	} else if styles.styleList[0].Vertical != "top" {
 		t.Error("Vertical should be top but ", styles.styleList[0].Vertical)
+	} else if styles.styleList[0].Wrap != 1 {
+		t.Error("Wrap should be 1 but ", styles.styleList[0].Wrap)
 	}
 }
 
