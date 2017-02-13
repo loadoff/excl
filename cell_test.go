@@ -87,3 +87,141 @@ func TestSetString(t *testing.T) {
 	f.Close()
 	os.Remove("temp/sharedStrings.xml")
 }
+
+func TestSetCellNumFmt(t *testing.T) {
+	cell := &Cell{}
+	cell.styles = &Styles{}
+	cell.styleIndex = 10
+
+	if cell.SetNumFmt("format"); cell.style.NumFmtID != 0 {
+		t.Error("numFmtId should be 0 but ", cell.style.NumFmtID)
+	}
+
+	if cell.SetNumFmt("format"); cell.style.NumFmtID != 1 {
+		t.Error("numFmtId should be 1 but ", cell.style.NumFmtID)
+	}
+}
+
+func TestCellSetFont(t *testing.T) {
+	cell := &Cell{}
+	cell.styles = &Styles{fonts: &Tag{}}
+	cell.styleIndex = 10
+
+	if cell.SetFont(Font{}); cell.style.FontID != 0 {
+		t.Error("fontID should be 0 but ", cell.style.FontID)
+	}
+
+	if cell.SetFont(Font{}); cell.style.FontID != 1 {
+		t.Error("fontID should be 1 but ", cell.style.FontID)
+	}
+}
+
+func TestCellSetBackgroundColor(t *testing.T) {
+	cell := &Cell{}
+	cell.styles = &Styles{fills: &Tag{}}
+	cell.styleIndex = 10
+
+	if cell.SetBackgroundColor("FFFFFF"); cell.style.FillID != 0 {
+		t.Error("fillID should be 0 but ", cell.style.FillID)
+	}
+
+	if cell.SetBackgroundColor("000000"); cell.style.FillID != 1 {
+		t.Error("fillID should be 1 but ", cell.style.FillID)
+	}
+}
+
+func TestCellSetBorder(t *testing.T) {
+	cell := &Cell{}
+	cell.styles = &Styles{borders: &Tag{}}
+	cell.styleIndex = 10
+
+	if cell.SetBorder(Border{}); cell.style.BorderID != 0 {
+		t.Error("BorderID should be 0 but ", cell.style.BorderID)
+	}
+
+	if cell.SetBorder(Border{}); cell.style.BorderID != 1 {
+		t.Error("BorderID should be 1 but ", cell.style.BorderID)
+	}
+}
+
+func TestCellSetStyle(t *testing.T) {
+	cell := &Cell{}
+	cell.styles = &Styles{}
+	cell.styleIndex = 10
+	style := &Style{}
+	cell.SetStyle(nil)
+	if cell.style != nil {
+		t.Error("style should be nil.")
+	}
+	cell.SetStyle(style)
+	if cell.style.NumFmtID != 0 {
+		t.Error("NumFmtID should be 0 but", cell.style.NumFmtID)
+	}
+	if cell.style.FontID != 0 {
+		t.Error("FontID should be 0 but", cell.style.FontID)
+	}
+	if cell.style.FillID != 0 {
+		t.Error("FillID should be 0 but", cell.style.FillID)
+	}
+	if cell.style.BorderID != 0 {
+		t.Error("BorderID should be 0 but", cell.style.BorderID)
+	}
+	if cell.style.Horizontal != "" {
+		t.Error("Horizontal should be empty but", cell.style.Horizontal)
+	}
+	if cell.style.Vertical != "" {
+		t.Error("Vertical should be empty but", cell.style.Vertical)
+	}
+
+	style.NumFmtID = 1
+	style.FontID = 2
+	style.FillID = 3
+	style.BorderID = 4
+	style.Horizontal = "center"
+	style.Vertical = "top"
+	cell.SetStyle(style)
+	if cell.style.NumFmtID != style.NumFmtID {
+		t.Error("NumFmtID should be 1 but", cell.style.NumFmtID)
+	}
+
+	if cell.style.FontID != style.FontID {
+		t.Error("FontID should be 2 but", cell.style.FontID)
+	}
+
+	if cell.style.FillID != style.FillID {
+		t.Error("FillID should be 3 but", cell.style.FillID)
+	}
+
+	if cell.style.BorderID != style.BorderID {
+		t.Error("BorderID should be 3 but", cell.style.BorderID)
+	}
+
+	if cell.style.Horizontal != style.Horizontal {
+		t.Error("Horizontal should be center but", cell.style.Horizontal)
+	}
+
+	if cell.style.Vertical != style.Vertical {
+		t.Error("Vertical should be top but", cell.style.Vertical)
+	}
+}
+
+func TestResetStyleIndex(t *testing.T) {
+	var cell *Cell
+	if cell.resetStyleIndex(); cell != nil {
+		t.Error("cell should be nil")
+	}
+	cell = &Cell{}
+	cell.style = &Style{}
+	cell.cell = &Tag{}
+	cell.styles = &Styles{cellXfs: &Tag{}}
+	cell.resetStyleIndex()
+	if _, err := cell.cell.getAttr("s"); err == nil {
+		t.Error("cell attribute should not be found.")
+	}
+
+	cell.changed = true
+	cell.resetStyleIndex()
+	if val, _ := cell.cell.getAttr("s"); val != "0" {
+		t.Error("style index should be 0 but", val)
+	}
+}

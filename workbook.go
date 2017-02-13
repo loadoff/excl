@@ -22,7 +22,6 @@ import (
 
 // Workbook はワークブック内の情報を格納する
 type Workbook struct {
-	Path          string
 	TempPath      string
 	types         *ContentTypes
 	opened        bool
@@ -30,7 +29,6 @@ type Workbook struct {
 	SharedStrings *SharedStrings
 	workbookRels  *WorkbookRels
 	Styles        *Styles
-	outputPath    string
 	workbookTag   *Tag
 	sheetsTag     *Tag
 }
@@ -47,21 +45,18 @@ type sheetsXML struct {
 	Sheetlist []SheetXML `xml:"sheet"`
 }
 
-// CreateWorkbook 新しくワークブックを作成する
-func CreateWorkbook(expand, outputPath string) (*Workbook, error) {
-	if !isDirExist(expand) {
-		return nil, errors.New("Directory[" + expand + "] does not exist.")
+// Create 新しくワークブックを作成する
+func Create() (*Workbook, error) {
+	dir, err := ioutil.TempDir("", "excl_"+strings.Replace(time.Now().Format("20060102030405.000"), ".", "", 1))
+	if err != nil {
+		return nil, err
 	}
-	dir := filepath.Join(expand, strings.Replace(time.Now().Format("TEMP_20060102030405.000"), ".", "", 1)+random())
-	workbook := &Workbook{Path: "", TempPath: dir, outputPath: outputPath}
+	workbook := &Workbook{TempPath: dir}
 	defer func() {
 		if !workbook.opened {
 			workbook.Close()
 		}
 	}()
-	if err := os.Mkdir(workbook.TempPath, 0755); err != nil {
-		return nil, err
-	}
 	if err := createContentTypes(dir); err != nil {
 		return nil, err
 	}
@@ -90,60 +85,48 @@ func CreateWorkbook(expand, outputPath string) (*Workbook, error) {
 	return workbook, nil
 }
 
-// NewWorkbook は新しいワークブック構造体を作成する
-// path にはワークブックのパス
-// expand には展開するパス
-func NewWorkbook(path, expand, outputPath string) (*Workbook, error) {
+// Open Excelファイルを開く
+func Open(path string) (*Workbook, error) {
 	if !isFileExist(path) {
 		return nil, errors.New("Excel file does not exist.")
 	}
-	if !isDirExist(expand) {
-		return nil, errors.New("Directory[" + expand + "] does not exist.")
-	}
-	dir := filepath.Join(expand, strings.Replace(time.Now().Format("TEMP_20060102030405.000"), ".", "", 1)+random())
-	workbook := &Workbook{Path: path, TempPath: dir, outputPath: outputPath}
-	return workbook, nil
-}
-
-// Open ワークブックを開く
-func (workbook *Workbook) Open() error {
-	if ok := isFileExist(workbook.Path); !ok {
-		return errors.New("File[" + workbook.Path + "] does not exist.")
-	}
-	err := os.Mkdir(workbook.TempPath, 0755)
+	dir, err := ioutil.TempDir("", "excl"+strings.Replace(time.Now().Format("20060102030405"), ".", "", 1))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := unzip(workbook.Path, workbook.TempPath); err != nil {
-		return err
+	workbook := &Workbook{TempPath: dir}
+	if err := unzip(path, dir); err != nil {
+		return nil, err
 	}
+
 	defer func() {
 		if !workbook.opened {
 			workbook.Close()
 		}
 	}()
-	if !isFileExist(filepath.Join(workbook.TempPath, "[Content_Types].xml")) {
-		return errors.New("This excel file is corrupt.")
+
+	if !isFileExist(filepath.Join(dir, "[Content_Types].xml")) {
+		return nil, errors.New("This excel file is corrupt.")
 	}
-	if !isFileExist(filepath.Join(workbook.TempPath, "xl", "workbook.xml")) {
-		return errors.New("This excel file is corrupt.")
+	if !isFileExist(filepath.Join(dir, "xl", "workbook.xml")) {
+		return nil, errors.New("This excel file is corrupt.")
 	}
-	if !isFileExist(filepath.Join(workbook.TempPath, "xl", "_rels", "workbook.xml.rels")) {
-		return errors.New("This excel file is corrupt.")
+	if !isFileExist(filepath.Join(dir, "xl", "_rels", "workbook.xml.rels")) {
+		return nil, errors.New("This excel file is corrupt.")
 	}
-	if !isFileExist(filepath.Join(workbook.TempPath, "xl", "styles.xml")) {
-		return errors.New("This excel file is corrupt.")
+	if !isFileExist(filepath.Join(dir, "xl", "styles.xml")) {
+		return nil, errors.New("This excel file is corrupt.")
 	}
 	err = workbook.setInfo()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	workbook.opened = true
-	return nil
+	return workbook, nil
 }
 
-// Close 操作中のブックを閉じる
-func (workbook *Workbook) Close() error {
+// Save 操作中のブックを保存し閉じる
+func (workbook *Workbook) Save(path string) error {
 	if workbook == nil || !workbook.opened {
 		return nil
 	}
@@ -182,8 +165,15 @@ func (workbook *Workbook) Close() error {
 		return err
 	}
 	f.Close()
-	createZip(workbook.outputPath, getFiles(workbook.TempPath), workbook.TempPath)
+	if path != "" {
+		createZip(path, getFiles(workbook.TempPath), workbook.TempPath)
+	}
 	return nil
+}
+
+// Close 操作中のブックを閉じる(保存はしない)
+func (workbook *Workbook) Close() error {
+	return workbook.Save("")
 }
 
 // OpenSheet 指定されたシートを開く

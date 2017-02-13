@@ -1,6 +1,7 @@
 package excl
 
 import (
+	"bytes"
 	"encoding/xml"
 	"io/ioutil"
 	"os"
@@ -85,6 +86,14 @@ func TestAddString(t *testing.T) {
 	f.Close()
 	if string(b) != "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<sst><si></si><si><t>hello world</t></si></sst>" {
 		t.Error(string(b))
+	}
+}
+
+func TestEscapeText(t *testing.T) {
+	buf := new(bytes.Buffer)
+	escapeText(buf, []byte("\"'&<>\t\n\rあいう"))
+	if string(buf.Bytes()) != "&#34;&#39;&amp;&lt;&gt;&#x9;&#xA;&#xD;あいう" {
+		t.Error("string should be &#34;&#39;&amp;&lt;&gt;&#x9;&#xA;&#xD;あいう but ", string(buf.Bytes()))
 	}
 }
 

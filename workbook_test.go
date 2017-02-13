@@ -18,35 +18,16 @@ func createCurruputXLSX(from string, to string, delfile string) {
 }
 
 func TestCreateWorkbook(t *testing.T) {
-	if err := os.Mkdir("temp/out", 0755); err != nil {
-		t.Error(err.Error())
-	}
-	defer os.RemoveAll("temp/out")
-	wb, err := CreateWorkbook("temp/out", "temp/new.xlsx")
+	wb, err := Create()
 	if err != nil {
 		t.Error("error should not be happen but ", err.Error())
 	}
 	wb.OpenSheet("hello")
-	wb.Close()
+	wb.Save("temp/new.xlsx")
 	if !isFileExist("temp/new.xlsx") {
 		t.Error("new.xlsx should be created.")
 	}
 	os.Remove("temp/new.xlsx")
-}
-
-func TestNewWorkbook(t *testing.T) {
-	workbook, err := NewWorkbook("path", "tempPath", "tempPath/text.xlsx")
-	if err == nil {
-		t.Error(`tempPath should not be exists.`)
-		workbook.Close()
-	}
-	os.Mkdir("cancreate", 0700)
-	workbook, err = NewWorkbook("path", "cancreate", "tempPath/text.xlsx")
-	if err == nil {
-		t.Error(`error should be happen.`)
-		workbook.Close()
-	}
-	os.RemoveAll("cancreate")
 }
 
 func TestFileDirExist(t *testing.T) {
@@ -72,18 +53,19 @@ func TestFileDirExist(t *testing.T) {
 
 func TestOpenWorkbook(t *testing.T) {
 	var err error
+	var workbook *Workbook
+
 	os.MkdirAll("temp/out", 0755)
 	defer os.RemoveAll("temp/out")
-	workbook, _ := NewWorkbook("temp/test.xlsx", "temp/out", "temp/out/test.xlsx")
-	if err := workbook.Open(); err != nil {
+	if workbook, err = Open("temp/test.xlsx"); err != nil {
 		t.Error(err.Error())
 		t.Error("workbook should be opened.")
 	}
 	if ok := isFileExist(filepath.Join(workbook.TempPath, "[Content_Types].xml")); !ok {
 		t.Error("[Content_Types].xml should be exists.")
 	}
-	err = workbook.Close()
-	if err != nil {
+
+	if err = workbook.Save("temp/out/test.xlsx"); err != nil {
 		t.Error("Close should be succeed.", err.Error())
 	}
 	if ok := isFileExist(filepath.Join(workbook.TempPath, "[Content_Types].xml")); ok {
@@ -93,58 +75,39 @@ func TestOpenWorkbook(t *testing.T) {
 		t.Error("test.xml should be created.")
 	}
 	// error patern
-	_, err = NewWorkbook("no/path/excel.xlsx", "temp/out", "temp/out/test.xlsx")
-	if err == nil {
-		t.Error("error should be happen.")
-	}
-	_, err = NewWorkbook("temp/test.xlsx", "nopath", "temp/out/text.xlsx")
-	if err == nil {
-		t.Error("error should be happen because path does not exist.")
-	}
-	workbook, _ = NewWorkbook("temp/test.xlsx", "temp/out", "temp/out/text.xlsx")
-	workbook.Path = "no/path/excel.xlsx"
-	if err := workbook.Open(); err == nil {
+
+	if workbook, err = Open("no/path/excel.xlsx"); err == nil {
 		t.Error("workbook should not be opened.")
+		workbook.Close()
 	}
-	workbook.Close()
-	workbook, _ = NewWorkbook("temp/test.xlsx", "temp/out", "temp/out/text.xlsx")
-	os.Mkdir(workbook.TempPath, 0755)
-	if err := workbook.Open(); err == nil {
-		t.Error("workbook should not be opened.")
-	}
-	workbook.Close()
 
 	f, _ := os.Create("temp/currupt.xlsx")
 	z := zip.NewWriter(f)
 	z.Close()
 	f.Close()
 	defer os.Remove("temp/currupt.xlsx")
-	workbook, _ = NewWorkbook("temp/currupt.xlsx", "temp/out", "temp/out/text.xlsx")
-	if err := workbook.Open(); err == nil {
+	if workbook, err = Open("temp/currupt.xlsx"); err == nil {
 		t.Error("workbook should not be opened because excel file must be currupt.")
 	}
 	workbook.Close()
 
 	createZip("temp/empty.xlsx", nil, "")
 	defer os.Remove("temp/empty.xlsx")
-	workbook, _ = NewWorkbook("temp/empty.xlsx", "temp/out", "temp/out/text.xlsx")
-	if err := workbook.Open(); err == nil {
+	if workbook, err = Open("temp/empty.xlsx"); err == nil {
 		t.Error("workbook should not be opened beacause excel file is not zip file.")
+		workbook.Close()
 	}
-	workbook.Close()
 
 	createCurruputXLSX("temp/test.xlsx", "temp/no_content_types.xlsx", "[Content_Types].xml")
 	defer os.Remove("temp/no_content_types.xlsx")
-	workbook, _ = NewWorkbook("temp/no_content_types.xlsx", "temp/out", "temp/out/test.xlsx")
-	if err := workbook.Open(); err == nil {
+	if workbook, err = Open("temp/no_content_types.xlsx"); err == nil {
 		t.Error("workbook should not be opened beacause excel file does not include [Content_Types].xml.")
+		workbook.Close()
 	}
-	workbook.Close()
 
 	createCurruputXLSX("temp/test.xlsx", "temp/no_workbook_xml.xlsx", "xl/workbook.xml")
 	defer os.Remove("temp/no_workbook_xml.xlsx")
-	workbook, _ = NewWorkbook("temp/no_workbook_xml.xlsx", "temp/out", "temp/out/test.xlsx")
-	if err := workbook.Open(); err == nil {
+	if workbook, err = Open("temp/no_workbook_xml.xlsx"); err == nil {
 		t.Error("workbook should not be opened beacause excel file does not include workbook.xml.")
 	}
 	workbook.Close()
@@ -152,10 +115,11 @@ func TestOpenWorkbook(t *testing.T) {
 }
 
 func TestOpenWorkbookXML(t *testing.T) {
-	workbook := Workbook{TempPath: ""}
+	var err error
+	workbook := &Workbook{TempPath: ""}
 	workbook.TempPath = ""
-	err := workbook.openWorkbook()
-	if err == nil {
+
+	if err = workbook.openWorkbook(); err == nil {
 		t.Error("workbook.xml should not be opened because workbook.xml does not exist.")
 	}
 	os.MkdirAll("temp/workbook/xl", 0755)
@@ -182,8 +146,7 @@ func TestOpenWorkbookXML(t *testing.T) {
 func TestOpenSheet(t *testing.T) {
 	os.Mkdir("temp/out", 0755)
 	defer os.RemoveAll("temp/out")
-	workbook, _ := NewWorkbook("temp/test.xlsx", "temp/out", "temp/out/test.xlsx")
-	workbook.Open()
+	workbook, _ := Open("temp/test.xlsx")
 	sheet, _ := workbook.OpenSheet("Sheet1")
 	if sheet == nil {
 		t.Error("Sheet1 should be exist.")
@@ -198,33 +161,29 @@ func TestOpenSheet(t *testing.T) {
 	if sheet != tempSheet {
 		t.Error("ペンギンﾍﾟﾝｷﾞﾝAaＡａ0０ sheet should be same as ﾍﾟﾝｷﾞﾝペンギンaaaa00 sheet.")
 	}
-
 	workbook.Close()
 }
 
 func TestSetInfo(t *testing.T) {
 	os.Mkdir("temp/out", 0755)
 	defer os.RemoveAll("temp/out")
-	workbook, _ := NewWorkbook("temp/test.xlsx", "temp/out", "temp/out/text.xlsx")
-	workbook.TempPath = ""
+	workbook := &Workbook{TempPath: "temp/out"}
 	err := workbook.setInfo()
 	if err == nil {
 		t.Error("[Content_Types].xml should not be opened.")
 	}
-	workbook.TempPath = "temp"
+	createContentTypes("temp/out")
 	err = workbook.setInfo()
 	if err == nil {
 		t.Error("workbook.xml should not be opened.")
 	}
-	f, _ := os.Create(filepath.Join("temp", "xl", "workbook.xml"))
-	f.WriteString(`<workbook><sheets><sheet name="Sheet1"></sheet></sheets></workbook>`)
+	createWorkbook("temp/out")
+	f, _ := os.Create(filepath.Join("temp/out/xl/sharedStrings.xml"))
 	f.Close()
-	defer os.Remove(filepath.Join("temp", "xl", "workbook.xml"))
-	f, _ = os.Create(filepath.Join("temp", "xl", "sharedStrings.xml"))
-	f.Close()
-	defer os.Remove(filepath.Join("temp", "xl", "sharedStrings.xml"))
 	err = workbook.setInfo()
 	if err == nil {
 		t.Error("sharedStrings.xml should not be opened.")
 	}
+	os.Remove(filepath.Join("temp/out/xl/sharedStrings.xml"))
+
 }

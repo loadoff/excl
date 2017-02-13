@@ -61,3 +61,23 @@ func TestAddSheetWorkbookRels(t *testing.T) {
 		t.Error("workbook.xml.rels should be closed.", err.Error())
 	}
 }
+
+func TestCloseWorkbookRels(t *testing.T) {
+	var wbr *WorkbookRels
+	var err error
+	if err = wbr.Close(); err != nil {
+		t.Error("error should not be happen.", err.Error())
+	}
+
+	wbr = &WorkbookRels{}
+	wbr.rels = &Relationships{}
+	if err = wbr.Close(); err == nil {
+		t.Error("error should be happen.")
+	}
+
+	wbr.path = "temp/rels.xml"
+	if err = wbr.Close(); err != nil {
+		t.Error("error should not be happen.", err.Error())
+	}
+	os.Remove("temp/rels.xml")
+}
