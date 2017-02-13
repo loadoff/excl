@@ -1,16 +1,9 @@
 package excl
 
 import (
-	"bufio"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
-
-	"golang.org/x/text/encoding/japanese"
-	"golang.org/x/text/transform"
 )
 
 func TestNewSheet(t *testing.T) {
@@ -139,56 +132,7 @@ func TestShowGridlines(t *testing.T) {
 
 }
 
-// UTF-8 から ShiftJIS
-func utf8ToSjis(str string) (string, error) {
-	ret, err := ioutil.ReadAll(transform.NewReader(strings.NewReader(str), japanese.ShiftJIS.NewEncoder()))
-	if err != nil {
-		return "", err
-	}
-	return string(ret), err
-}
-
-// ShiftJIS から UTF-8
-func sjisToUtf8(str string) (string, error) {
-	ret, err := ioutil.ReadAll(transform.NewReader(strings.NewReader(str), japanese.ShiftJIS.NewDecoder()))
-	if err != nil {
-		return "", err
-	}
-	return string(ret), err
-}
-
-func BenchmarkCreateRowsSJIS(b *testing.B) {
-	f, _ := os.Create("temp/__sharedStrings.xml")
-	f2, _ := os.Create("temp/__sheet1.xml")
-	sjis, _ := utf8ToSjis("あいうえお")
-	defer f.Close()
-	defer f2.Close()
-	sharedStrings := &SharedStrings{tempFile: f}
-	sheet := &Sheet{sharedStrings: sharedStrings, tempFile: f2}
-	for j := 0; j < 10; j++ {
-		rows := sheet.CreateRows(10000*j+1, 10000*(j+1))
-		for i := 10000 * j; i < 10000*(j+1); i++ {
-			cells := rows[i].CreateCells(1, 20)
-			for _, cell := range cells {
-				cell.SetString(sjis)
-			}
-		}
-		sheet.OutputThroughRowNo(10000 * (j + 1))
-	}
-	f2.Close()
-	f.Seek(0, os.SEEK_SET)
-	reader := bufio.NewReader(japanese.ShiftJIS.NewDecoder().Reader(f))
-	f2, err := os.Create("temp/__sharedStrings2.xml")
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		io.Copy(f2, reader)
-	}
-	f.Close()
-	f2.Close()
-}
-
-func BenchmarkCreateRowsUTF8(b *testing.B) {
+func BenchmarkCreateRows(b *testing.B) {
 	f, _ := os.Create("temp/__sharedStrings_utf8.xml")
 	f2, _ := os.Create("temp/__sheet_utf8.xml")
 	utf8 := "あいうえお"
@@ -224,19 +168,5 @@ func BenchmarkCreateRowsNumber(b *testing.B) {
 		}
 		sheet.OutputThroughRowNo(10000 * (j + 1))
 	}
-	f2.Close()
-}
-
-func BenchmarkConvert(b *testing.B) {
-	sjis, _ := utf8ToSjis("あいうえお")
-	f, _ := os.Create("temp/test1.txt")
-	for i := 1; i < 100000*20; i++ {
-		f.WriteString(sjis)
-	}
-	f.Seek(0, os.SEEK_SET)
-	f2, _ := os.Create("temp/test2.txt")
-	r := transform.NewReader(f, japanese.ShiftJIS.NewDecoder())
-	io.Copy(f2, r)
-	f.Close()
 	f2.Close()
 }

@@ -161,7 +161,7 @@ func (cell *Cell) SetStyle(style *Style) *Cell {
 }
 
 func (cell *Cell) resetStyleIndex() {
-	if cell.changed {
+	if cell != nil && cell.changed {
 		index := cell.styles.SetStyle(cell.style)
 		cell.cell.setAttr("s", strconv.Itoa(index))
 	}

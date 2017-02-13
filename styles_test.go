@@ -10,7 +10,8 @@ import (
 )
 
 func TestOpenStypes(t *testing.T) {
-	defer os.Remove(filepath.Join("temp", "xl", "styles.xml"))
+	os.Mkdir(filepath.Join("temp", "xl"), 0755)
+	defer os.RemoveAll(filepath.Join("temp", "xl"))
 
 	_, err := OpenStyles("nopath")
 	if err == nil {
@@ -28,6 +29,13 @@ func TestOpenStypes(t *testing.T) {
 	_, err = OpenStyles("temp")
 	if err == nil {
 		t.Error("styles.xml should not be opened because worksheet tag does not exist.")
+	}
+
+	f, _ = os.Create(filepath.Join("temp", "xl", "styles.xml"))
+	f.WriteString("<styleSheet></styleSheet>")
+	f.Close()
+	if _, err := OpenStyles("temp"); err != nil {
+		t.Error("styles.xml should be opened but", err.Error())
 	}
 }
 
@@ -287,5 +295,16 @@ func TestSetStyle(t *testing.T) {
 	if b.String() != `<xf numFmtId="1" fontId="2" fillId="3" borderId="4" xfId="5" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top"></alignment></xf>` {
 		t.Error("xml is corrupt [", b.String(), "]")
 	}
+}
 
+func TestGetStyle(t *testing.T) {
+	styles := &Styles{}
+	if styles.GetStyle(0) != nil {
+		t.Error("return value should be nil.")
+	}
+	style := &Style{}
+	styles.styleList = append(styles.styleList, style)
+	if styles.GetStyle(0) != style {
+		t.Error("return value should be same as style.")
+	}
 }

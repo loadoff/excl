@@ -14,11 +14,10 @@ excl
 
 ## Usage
 
+既存のExcelファイルを操作
 ```go
-// 読み込みExcelファイル、展開先、新規書き込み先を指定
-w, _ := excl.NewWorkbook("path/to/read.xlsx", "path/to/expand", "path/to/write.xlsx")
-// Execlブックを開く
-w.Open()
+// Excelファイルを読み込み
+w, _ := excl.Open("path/to/read.xlsx")
 // シートを開く
 s, _ := w.OpenSheet("Sheet1")
 // 一行目を取得
@@ -27,18 +26,26 @@ r := s.GetRow(1)
 c := r.GetCell(1)
 // セルに10を出力
 c.SetNumber("10")
-
 // 2列目のセルにABCDEという文字列を出力
 c = r.SetString("ABCDE", 2)
-
+// シートを閉じる
 s.Close()
-w.Close()
+// 保存
+w.Save("path/to/new.xlsx")
+```
+
+新規Excelファイルを作成
+```go
+// 新規Excelファイルを作成
+w, _ := excl.Create()
+s, _ := w.OpenSheet("Sheet1")
+s.Close()
+w.Save("path/to/new.xlsx")
 ```
 
 セルの書式の設定方法
 ```go
-w, _ := excl.NewWorkbook("path/to/read.xlsx", "path/to/expand", "path/to/write.xlsx")
-w.Open()
+w, _ := excl.Open("path/to/read.xlsx")
 s, _ := w.OpenSheet("Sheet1")
 r := s.GetRow(1)
 c := r.GetCell(1)
@@ -57,20 +64,19 @@ c.SetBorder(excl.Border{
 	Bottom: nil,
 })
 s.Close()
-w.Close()
+w.Save("path/to/new.xlsx")
 ```
 
 グリッド線の表示非表示
 ```go
-w, _ := excl.NewWorkbook("path/to/read.xlsx", "path/to/expand", "path/to/write.xlsx")
-w.Open()
+w, _ := excl.Open("path/to/read.xlsx")
 s, _ := w.OpenSheet("Sheet1")
 // シートのグリッド線を表示
 s.ShowGridlines(true)
 // シートのグリッド線を非表示
 s.ShowGridlines(false)
 s.Close()
-w.Close()
+w.Save("path/to/new.xlsx")
 ```
 
 ## Install
