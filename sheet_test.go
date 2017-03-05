@@ -129,7 +129,42 @@ func TestShowGridlines(t *testing.T) {
 		t.Error(string(b))
 	}
 	os.Remove("temp/xl/worksheets/sheet2.xml")
+}
 
+func TestColsWidth(t *testing.T) {
+	os.MkdirAll("temp/xl/worksheets", 0755)
+	defer os.RemoveAll("temp/xl")
+	f, _ := os.Create("temp/xl/worksheets/sheet1.xml")
+	f.WriteString("<worksheet><sheetData></sheetData></worksheet>")
+	f.Close()
+	sheet := NewSheet("sheet1", 0)
+	sheet.Open("temp")
+	defer sheet.Close()
+	sheet.SetColWidth(1.2, 2)
+	sheet.SetColWidth(1.1, 1)
+	sheet.Close()
+	b, _ := ioutil.ReadFile("temp/xl/worksheets/sheet1.xml")
+	str := `<worksheet><cols><col min="1" max="1" width="1.1" customWidth="1"></col><col min="2" max="2" width="1.2" customWidth="1"></col></cols><sheetData></sheetData></worksheet>`
+	if string(b) != str {
+		t.Error("file string should be [", str, "] but", string(b))
+	}
+
+	f, _ = os.Create("temp/xl/worksheets/sheet1.xml")
+	f.WriteString(`<worksheet><cols><col min="2" max="6" style="1" width="2.6" customWidth="1"></col></cols><sheetData></sheetData></worksheet>`)
+	f.Close()
+	sheet = NewSheet("sheet1", 0)
+	sheet.Open("temp")
+	defer sheet.Close()
+
+	sheet.SetColWidth(2.2, 2)
+	sheet.SetColWidth(6.6, 6)
+	sheet.SetColWidth(4.4, 4)
+	sheet.Close()
+	b, _ = ioutil.ReadFile("temp/xl/worksheets/sheet1.xml")
+	str = `<worksheet><cols><col min="2" max="2" style="1" width="2.2" customWidth="1"></col><col min="3" max="3" style="1" width="2.6" customWidth="1"></col><col min="4" max="4" style="1" width="4.4" customWidth="1"></col><col min="5" max="5" style="1" width="2.6" customWidth="1"></col><col min="6" max="6" style="1" width="6.6" customWidth="1"></col></cols><sheetData></sheetData></worksheet>`
+	if string(b) != str {
+		t.Error("file string should be [", str, "] but", string(b))
+	}
 }
 
 func BenchmarkCreateRows(b *testing.B) {

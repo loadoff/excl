@@ -14,7 +14,7 @@ type Row struct {
 	row           *Tag
 	cells         []*Cell
 	sharedStrings *SharedStrings
-	colsStyles    []ColsStyle
+	colInfos      []colInfo
 	style         string
 	minColNo      int
 	maxColNo      int
@@ -81,9 +81,9 @@ func (row *Row) CreateCells(from int, to int) []*Cell {
 		if row.style != "" {
 			style, _ = strconv.Atoi(row.style)
 		} else {
-			for _, colStyle := range row.colsStyles {
-				if colStyle.min <= i && i <= colStyle.max {
-					style, _ = strconv.Atoi(colStyle.style)
+			for _, colInfo := range row.colInfos {
+				if colInfo.style != "" && colInfo.min <= i && i <= colInfo.max {
+					style, _ = strconv.Atoi(colInfo.style)
 					break
 				}
 			}
@@ -118,7 +118,7 @@ func (row *Row) GetCell(colNo int) *Cell {
 	tag.setAttr("r", fmt.Sprintf("%s%d", ColStringPosition(int(colNo)), row.rowID))
 	if row.style != "" {
 		tag.setAttr("s", row.style)
-	} else if style := getStyleNo(row.colsStyles, int(colNo)); style != "" {
+	} else if style := getStyleNo(row.colInfos, int(colNo)); style != "" {
 		tag.setAttr("s", style)
 	}
 
