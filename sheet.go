@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// Sheet シート操作用の構造体
+// Sheet struct for control sheet data
 type Sheet struct {
 	xml           *SheetXML
 	opened        bool
@@ -19,17 +19,18 @@ type Sheet struct {
 	Styles        *Styles
 	worksheet     *Tag
 	sheetView     *Tag
+	cols          *Tag
 	sheetData     *Tag
 	tempFile      *os.File
 	afterString   string
 	sharedStrings *SharedStrings
 	sheetPath     string
 	tempSheetPath string
-	colsStyles    []ColsStyle
+	colInfos      colInfos
 	maxRow        int
 }
 
-// SheetXML シートの情報を補完する
+// SheetXML sheet.xml information
 type SheetXML struct {
 	XMLName xml.Name `xml:"sheet"`
 	Name    string   `xml:"name,attr"`
@@ -37,14 +38,18 @@ type SheetXML struct {
 	RID     string   `xml:"id,attr"`
 }
 
-// ColsStyle 列のスタイル情報
-type ColsStyle struct {
-	min   int
-	max   int
-	style string
+// colInfo 列のスタイル情報
+type colInfo struct {
+	min         int
+	max         int
+	style       string
+	width       float64
+	customWidth bool
 }
 
-// NewSheet シートを作成する
+type colInfos []colInfo
+
+// NewSheet create new sheet information.
 func NewSheet(name string, index int) *Sheet {
 	return &Sheet{xml: &SheetXML{
 		XMLName: xml.Name{Space: "", Local: "sheet"},
@@ -70,7 +75,7 @@ func (sheet *Sheet) Create(dir string) error {
 	return nil
 }
 
-// Open シートを開く
+// Open open sheet.xml in directory
 func (sheet *Sheet) Open(dir string) error {
 	var err error
 	sheet.sheetPath = filepath.Join(dir, "xl", "worksheets", "sheet"+sheet.xml.SheetID+".xml")
@@ -87,11 +92,11 @@ func (sheet *Sheet) Open(dir string) error {
 	if err = sheet.setData(tag); err != nil {
 		return err
 	}
+	sheet.worksheet = tag
 	sheet.setSeparatePoint()
 	if sheet.tempFile, err = os.Create(sheet.tempSheetPath); err != nil {
 		return err
 	}
-	sheet.worksheet = tag
 	sheet.opened = true
 	return nil
 }
@@ -119,11 +124,11 @@ func (sheet *Sheet) Close() error {
 	return nil
 }
 
-func (sheet *Sheet) setData(tag *Tag) error {
-	if tag.Name.Local != "worksheet" {
+func (sheet *Sheet) setData(sheetTag *Tag) error {
+	if sheetTag.Name.Local != "worksheet" {
 		return errors.New("The file [" + sheet.sheetPath + "] is currupt.")
 	}
-	for _, child := range tag.Children {
+	for _, child := range sheetTag.Children {
 		switch tag := child.(type) {
 		case *Tag:
 			if tag.Name.Local == "sheetData" {
@@ -135,7 +140,7 @@ func (sheet *Sheet) setData(tag *Tag) error {
 							if newRow == nil {
 								return errors.New("The file [" + sheet.sheetPath + "] is currupt.")
 							}
-							newRow.colsStyles = sheet.colsStyles
+							newRow.colInfos = sheet.colInfos
 							sheet.Rows = append(sheet.Rows, newRow)
 							sheet.maxRow = newRow.rowID
 						}
@@ -144,7 +149,8 @@ func (sheet *Sheet) setData(tag *Tag) error {
 				sheet.sheetData = tag
 				break
 			} else if tag.Name.Local == "cols" {
-				sheet.colsStyles = getColsStyles(tag)
+				sheet.cols = tag
+				sheet.colInfos = getColInfos(tag)
 			} else if tag.Name.Local == "sheetViews" {
 				for _, view := range tag.Children {
 					if v, ok := view.(*Tag); ok {
@@ -163,10 +169,21 @@ func (sheet *Sheet) setData(tag *Tag) error {
 }
 
 func (sheet *Sheet) setSeparatePoint() {
+	for i := 0; i < len(sheet.worksheet.Children); i++ {
+		if sheet.cols != nil && sheet.worksheet.Children[i] == sheet.cols {
+			sheet.worksheet.Children[i] = separateTag()
+			break
+		} else if sheet.worksheet.Children[i] == sheet.sheetData {
+			sheet.cols = &Tag{Name: xml.Name{Local: "cols"}}
+			sheet.worksheet.Children = append(sheet.worksheet.Children[:i], append([]interface{}{separateTag()},
+				sheet.worksheet.Children[i:]...)...)
+			break
+		}
+	}
 	sheet.sheetData.Children = []interface{}{separateTag()}
 }
 
-// CreateRows 行を作成する
+// CreateRows create multiple rows
 func (sheet *Sheet) CreateRows(from int, to int) []*Row {
 	if sheet.maxRow < to {
 		sheet.maxRow = to
@@ -220,7 +237,7 @@ func (sheet *Sheet) GetRow(rowNo int) *Row {
 		Attr: attr,
 	}
 	row := NewRow(tag, sheet.sharedStrings, sheet.Styles)
-	row.colsStyles = sheet.colsStyles
+	row.colInfos = sheet.colInfos
 	added := false
 	rows := make([]*Row, len(sheet.Rows)+1)
 	for i := 0; i < len(sheet.Rows); i++ {
@@ -256,9 +273,12 @@ func (sheet *Sheet) outputFirst() {
 	var b bytes.Buffer
 	xml.NewEncoder(&b).Encode(sheet.worksheet)
 	strs := strings.Split(b.String(), "<separate_tag></separate_tag>")
-
 	sheet.tempFile.WriteString(strs[0])
-	sheet.afterString = strs[1]
+	if len(sheet.colInfos) != 0 {
+		xml.NewEncoder(sheet.tempFile).Encode(sheet.colInfos)
+	}
+	sheet.tempFile.WriteString(strs[1])
+	sheet.afterString = strs[2]
 	sheet.worksheet = nil
 }
 
@@ -276,7 +296,7 @@ func (sheet *Sheet) OutputAll() {
 	sheet.Rows = nil
 }
 
-// OutputThroughRowNo rowNoまですべて出力する
+// OutputThroughRowNo output through to rowno
 func (sheet *Sheet) OutputThroughRowNo(rowNo int) {
 	var i int
 	if sheet.worksheet != nil {
@@ -296,31 +316,38 @@ func (sheet *Sheet) OutputThroughRowNo(rowNo int) {
 }
 
 // getColsStyles 列に設定されているスタイルを取得する
-func getColsStyles(tag *Tag) []ColsStyle {
-	var styles []ColsStyle
+func getColInfos(tag *Tag) []colInfo {
+	var infos []colInfo
 	for _, child := range tag.Children {
 		switch t := child.(type) {
 		case *Tag:
 			if t.Name.Local != "col" {
 				continue
 			}
-			var style ColsStyle
+			var info colInfo
 			for _, attr := range t.Attr {
 				if attr.Name.Local == "min" {
-					style.min, _ = strconv.Atoi(attr.Value)
+					info.min, _ = strconv.Atoi(attr.Value)
 				} else if attr.Name.Local == "max" {
-					style.max, _ = strconv.Atoi(attr.Value)
+					info.max, _ = strconv.Atoi(attr.Value)
 				} else if attr.Name.Local == "style" {
-					style.style = attr.Value
+					info.style = attr.Value
+				} else if attr.Name.Local == "width" {
+					info.width, _ = strconv.ParseFloat(attr.Value, 64)
+				} else if attr.Name.Local == "customWidth" {
+					info.customWidth = false
+					if attr.Value == "1" {
+						info.customWidth = true
+					}
 				}
 			}
-			styles = append(styles, style)
+			infos = append(infos, info)
 		}
 	}
-	return styles
+	return infos
 }
 
-func getStyleNo(styles []ColsStyle, colNo int) string {
+func getStyleNo(styles []colInfo, colNo int) string {
 	for _, style := range styles {
 		if style.min <= 0 || style.max <= 0 {
 			continue
@@ -330,4 +357,94 @@ func getStyleNo(styles []ColsStyle, colNo int) string {
 		}
 	}
 	return ""
+}
+
+// SetColWidth set column width
+func (sheet *Sheet) SetColWidth(width float64, colNo int) {
+	for i, info := range sheet.colInfos {
+		if info.min == colNo && colNo == info.max {
+			// if min and max are same as colNo just replace width and customWidth value
+			sheet.colInfos[i].width = width
+			sheet.colInfos[i].customWidth = true
+			return
+		} else if info.min == colNo {
+			// insert info before index
+			info.width = width
+			info.max = colNo
+			info.customWidth = true
+			sheet.colInfos[i].min++
+			if i > 0 {
+				sheet.colInfos = append(sheet.colInfos[:i-1], append([]colInfo{info}, sheet.colInfos[i-1:]...)...)
+			} else {
+				sheet.colInfos = append([]colInfo{info}, sheet.colInfos...)
+			}
+			return
+		} else if info.max == colNo {
+			// insert info after index
+			sheet.colInfos[i].max--
+			info.width = width
+			info.min = colNo
+			info.customWidth = true
+			sheet.colInfos = append(sheet.colInfos[:i+1], append([]colInfo{info}, sheet.colInfos[i+1:]...)...)
+			return
+		} else if info.min < colNo && colNo < info.max {
+			// devide three deferent informations
+			beforeInfo := info.clone()
+			afterInfo := info.clone()
+			beforeInfo.max = colNo - 1
+			afterInfo.min = colNo + 1
+			info.width = width
+			info.min = colNo
+			info.max = colNo
+			info.customWidth = true
+			sheet.colInfos = append(sheet.colInfos[:i], append([]colInfo{beforeInfo, info, afterInfo}, sheet.colInfos[i+1:]...)...)
+			return
+		} else if info.min > colNo {
+			// insert colInfo after index
+			info.width = width
+			info.min = colNo
+			info.max = colNo
+			info.customWidth = true
+			sheet.colInfos = append(sheet.colInfos[:i], append([]colInfo{info}, sheet.colInfos[i:]...)...)
+			return
+		}
+	}
+	info := colInfo{min: colNo, max: colNo, width: width, customWidth: true}
+	sheet.colInfos = append(sheet.colInfos, info)
+}
+
+func (info colInfo) clone() colInfo {
+	return colInfo{min: info.min, max: info.max, style: info.style, width: info.width, customWidth: info.customWidth}
+}
+
+func (infos colInfos) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name = xml.Name{Local: "cols"}
+	e.EncodeToken(start)
+	for _, info := range infos {
+		if err := e.Encode(info); err != nil {
+			return err
+		}
+	}
+	e.EncodeToken(start.End())
+	return nil
+}
+
+func (info colInfo) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name = xml.Name{Local: "col"}
+	start.Attr = []xml.Attr{
+		xml.Attr{Name: xml.Name{Local: "min"}, Value: strconv.Itoa(info.min)},
+		xml.Attr{Name: xml.Name{Local: "max"}, Value: strconv.Itoa(info.max)},
+	}
+	if info.style != "" {
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "style"}, Value: info.style})
+	}
+	if info.customWidth {
+		start.Attr = append(start.Attr, []xml.Attr{
+			xml.Attr{Name: xml.Name{Local: "width"}, Value: fmt.Sprint(info.width)},
+			xml.Attr{Name: xml.Name{Local: "customWidth"}, Value: "1"},
+		}...)
+	}
+	e.EncodeToken(start)
+	e.EncodeToken(start.End())
+	return nil
 }

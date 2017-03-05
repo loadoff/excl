@@ -48,8 +48,8 @@ func TestCreateCells(t *testing.T) {
 	if len(cells) != 3 {
 		t.Error("3 cells should be created")
 	}
-	colStyle := ColsStyle{min: 4, max: 5, style: "2"}
-	row.colsStyles = append(row.colsStyles, colStyle)
+	colInfo := colInfo{min: 4, max: 5, style: "2"}
+	row.colInfos = append(row.colInfos, colInfo)
 	cells = row.CreateCells(3, 10)
 	if len(cells) != 10 {
 		t.Error("10 cells should be created")
@@ -78,7 +78,7 @@ func TestGetCell(t *testing.T) {
 	if c.colNo != 4 {
 		t.Error("colNo should be 4 but", c.colNo)
 	}
-	row.colsStyles = append(row.colsStyles, ColsStyle{min: 1, max: 1, style: "3"})
+	row.colInfos = append(row.colInfos, colInfo{min: 1, max: 1, style: "3"})
 	c = row.GetCell(1)
 	if c.colNo != 1 {
 		t.Error("colNo should be 1 but", c.colNo)
