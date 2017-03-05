@@ -79,6 +79,16 @@ s.Close()
 w.Save("path/to/new.xlsx")
 ```
 
+カラム幅の変更
+```go
+w, _ := excl.Open("path/to/read.xlsx")
+s, _ := w.OpenSheet("Sheet1")
+// 5番目のカラム幅を1.1に変更
+s.SetColWidth(1.1, 5)
+s.Close()
+w.Save("path/to/new.xlsx")
+```
+
 ## Install
 
 ```bash
