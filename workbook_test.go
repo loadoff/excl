@@ -187,3 +187,16 @@ func TestSetInfo(t *testing.T) {
 	os.Remove(filepath.Join("temp/out/xl/sharedStrings.xml"))
 
 }
+
+func TestCalcPr(t *testing.T) {
+	workbook := &Workbook{calcPr: &Tag{}}
+	workbook.SetForceFormulaRecalculation(true)
+	if v, _ := workbook.calcPr.getAttr("fullCalcOnLoad"); v != "1" {
+		t.Error("fullCalcOnLoad attribute should be 1 but", v)
+	}
+	workbook.SetForceFormulaRecalculation(false)
+	if _, err := workbook.calcPr.getAttr("fullCalcOnLoad"); err == nil {
+		t.Error("fullCalcOnLoad attribute should not be found.")
+	}
+
+}
