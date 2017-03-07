@@ -31,6 +31,7 @@ type Workbook struct {
 	Styles        *Styles
 	workbookTag   *Tag
 	sheetsTag     *Tag
+	calcPr        *Tag
 }
 
 // WorkbookXML workbook.xmlに記載されている<workbook>タグの中身
@@ -205,6 +206,18 @@ func (workbook *Workbook) OpenSheet(name string) (*Sheet, error) {
 	return sheet, nil
 }
 
+// SetForceFormulaRecalculation set fullCalcOnLoad attribute to calcPr tag.
+// When this excel file is opened, all calculation fomula will be recalculated.
+func (workbook *Workbook) SetForceFormulaRecalculation(flg bool) {
+	if workbook.calcPr != nil {
+		if flg {
+			workbook.calcPr.setAttr("fullCalcOnLoad", "1")
+		} else {
+			workbook.calcPr.deleteAttr("fullCalcOnLoad")
+		}
+	}
+}
+
 func createSheetTag(name string, id int) *Tag {
 	tag := &Tag{Name: xml.Name{Local: "sheet"}}
 	tag.setAttr("name", name)
@@ -277,7 +290,7 @@ func createRels(dir string) error {
 	return nil
 }
 
-// openWorkbook xmlファイルを開きシート情報を取得する
+// openWorkbook open workbook.xml and set workbook information
 func (workbook *Workbook) openWorkbook() error {
 	workbookPath := filepath.Join(workbook.TempPath, "xl", "workbook.xml")
 	f, err := os.Open(workbookPath)
@@ -309,17 +322,18 @@ func (workbook *Workbook) openWorkbook() error {
 	}
 	f.Close()
 	workbook.workbookTag = tag
-	workbook.setSheetsTag()
+	workbook.setWorkbookInfo()
 	return nil
 }
 
-func (workbook *Workbook) setSheetsTag() {
+func (workbook *Workbook) setWorkbookInfo() {
 	for _, child := range workbook.workbookTag.Children {
 		switch t := child.(type) {
 		case *Tag:
 			if t.Name.Local == "sheets" {
 				workbook.sheetsTag = t
-				return
+			} else if t.Name.Local == "calcPr" {
+				workbook.calcPr = t
 			}
 		}
 	}
