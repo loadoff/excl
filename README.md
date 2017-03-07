@@ -89,6 +89,15 @@ s.Close()
 w.Save("path/to/new.xlsx")
 ```
 
+計算式結果の更新が必要な場合はSetForceFormulaRecalculationを使用する
+この関数を利用することでExcelを開いた際に結果が自動的に更新される
+```go
+w, _ := excl.Open("path/to/read.xlsx")
+// 何か処理...
+w.SetForceFormulaRecalculation(true)
+w.Save("path/to/new.xlsx")
+```
+
 ## Install
 
 ```bash
