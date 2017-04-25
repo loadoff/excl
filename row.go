@@ -146,7 +146,7 @@ func ColStringPosition(num int) string {
 	if num <= 26 {
 		return atoz[num-1]
 	}
-	return ColStringPosition(num/26) + atoz[(num-1)%26]
+	return ColStringPosition((num-1)/26) + atoz[(num-1)%26]
 }
 
 // ColNumPosition カラム番号をA-Z文字列から取得する
