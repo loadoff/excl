@@ -147,6 +147,9 @@ func TestColStringPosition(t *testing.T) {
 	if ColStringPosition(27) != "AA" {
 		t.Error("col id should be AA but", ColStringPosition(27))
 	}
+	if ColStringPosition(52) != "AZ" {
+		t.Error("col id should be AZ but", ColStringPosition(52))
+	}
 }
 
 func TestColNumPosition(t *testing.T) {
