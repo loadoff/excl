@@ -98,6 +98,23 @@ w.SetForceFormulaRecalculation(true)
 w.Save("path/to/new.xlsx")
 ```
 
+シート名変更
+```go
+w, _ := excl.Open("path/to/read.xlsx")
+w.RenameSheet("oldname", "newname")
+w.Save("path/to/new.xlsx")
+```
+
+シートの表示非表示切り替え
+```go
+w, _ := excl.Open("path/to/read.xlsx")
+// シートを隠す
+w.HideSheet("Sheet1")
+// シートを表示する
+w.ShowSheet("Sheet1")
+w.Save("path/to/new.xlsx")
+```
+
 ## Install
 
 ```bash

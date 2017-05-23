@@ -224,3 +224,36 @@ func TestRenameSheet(t *testing.T) {
 	sheet.Close()
 	workbook.Close()
 }
+
+func TestHideSheet(t *testing.T) {
+	os.Mkdir("temp/out", 0755)
+	defer os.RemoveAll("temp/out")
+	workbook, _ := Open("temp/test.xlsx")
+	workbook.HideSheet("Sheet1")
+	for i, sheet := range workbook.sheets {
+		if sheet.xml.Name != "Sheet1" {
+			continue
+		}
+		switch tag := workbook.sheetsTag.Children[i].(type) {
+		case *Tag:
+			if state, _ := tag.getAttr("state"); state != "hidden" {
+				t.Error("state should be hidden.")
+			}
+		}
+		break
+	}
+	workbook.ShowSheet("Sheet1")
+	for i, sheet := range workbook.sheets {
+		if sheet.xml.Name != "Sheet1" {
+			continue
+		}
+		switch tag := workbook.sheetsTag.Children[i].(type) {
+		case *Tag:
+			if _, err := tag.getAttr("state"); err == nil {
+				t.Error("state should not be found.")
+			}
+		}
+		break
+	}
+	workbook.Close()
+}
