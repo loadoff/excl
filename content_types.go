@@ -106,8 +106,7 @@ func (types *ContentTypes) sheetCount() int {
 }
 
 // addSheet シートを追加する
-func (types *ContentTypes) addSheet() string {
-	count := types.sheetCount()
+func (types *ContentTypes) addSheet(count int) string {
 	name := fmt.Sprintf("sheet%d.xml", count+1)
 
 	override := contentOverride{
