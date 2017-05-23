@@ -209,5 +209,18 @@ func TestSheetIndex(t *testing.T) {
 		t.Error("SheetID should be 3 but", sheet.xml.SheetID)
 	}
 	sheet.Close()
-	workbook.Save("temp/hoge.xlsx")
+	workbook.Close()
+}
+
+func TestRenameSheet(t *testing.T) {
+	os.Mkdir("temp/out", 0755)
+	defer os.RemoveAll("temp/out")
+	workbook, _ := Open("temp/test.xlsx")
+	workbook.RenameSheet("Sheet1", "rename sheet")
+	sheet, _ := workbook.OpenSheet("rename sheet")
+	if sheet.xml.SheetID != "1" {
+		t.Error("sheetID should be 1 but", sheet.xml.SheetID)
+	}
+	sheet.Close()
+	workbook.Close()
 }

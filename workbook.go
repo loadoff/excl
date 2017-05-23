@@ -220,6 +220,20 @@ func (workbook *Workbook) SetForceFormulaRecalculation(flg bool) {
 	}
 }
 
+// RenameSheet rename sheet name from old name to new name.
+func (workbook *Workbook) RenameSheet(old string, new string) {
+	for i, sheet := range workbook.sheets {
+		if sheet.xml.Name != old {
+			continue
+		}
+		sheet.xml.Name = new
+		switch t := workbook.sheetsTag.Children[i].(type) {
+		case *Tag:
+			t.setAttr("name", new)
+		}
+	}
+}
+
 func createSheetTag(name string, id int, sheetID int) *Tag {
 	tag := &Tag{Name: xml.Name{Local: "sheet"}}
 	tag.setAttr("name", name)
