@@ -28,6 +28,7 @@ type Sheet struct {
 	tempSheetPath string
 	colInfos      colInfos
 	maxRow        int
+	sheetIndex    int
 }
 
 // SheetXML sheet.xml information
@@ -50,18 +51,21 @@ type colInfo struct {
 type colInfos []colInfo
 
 // NewSheet create new sheet information.
-func NewSheet(name string, index int) *Sheet {
-	return &Sheet{xml: &SheetXML{
-		XMLName: xml.Name{Space: "", Local: "sheet"},
-		Name:    name,
-		SheetID: fmt.Sprintf("%d", index+1),
-		RID:     fmt.Sprintf("rId%d", index+1),
-	}}
+func NewSheet(name string, index int, maxSheetID int) *Sheet {
+	return &Sheet{
+		xml: &SheetXML{
+			XMLName: xml.Name{Space: "", Local: "sheet"},
+			Name:    name,
+			SheetID: fmt.Sprintf("%d", maxSheetID+1),
+			RID:     fmt.Sprintf("rId%d", index+1),
+		},
+		sheetIndex: index + 1,
+	}
 }
 
 // Create シートを新規に作成する
 func (sheet *Sheet) Create(dir string) error {
-	f, err := os.Create(filepath.Join(dir, "xl", "worksheets", "sheet"+sheet.xml.SheetID+".xml"))
+	f, err := os.Create(filepath.Join(dir, "xl", "worksheets", fmt.Sprintf("sheet%d.xml", sheet.sheetIndex)))
 	if err != nil {
 		return err
 	}
@@ -78,8 +82,8 @@ func (sheet *Sheet) Create(dir string) error {
 // Open open sheet.xml in directory
 func (sheet *Sheet) Open(dir string) error {
 	var err error
-	sheet.sheetPath = filepath.Join(dir, "xl", "worksheets", "sheet"+sheet.xml.SheetID+".xml")
-	sheet.tempSheetPath = filepath.Join(dir, "xl", "worksheets", "__sheet"+sheet.xml.SheetID+".xml")
+	sheet.sheetPath = filepath.Join(dir, "xl", "worksheets", fmt.Sprintf("sheet%d.xml", sheet.sheetIndex))
+	sheet.tempSheetPath = filepath.Join(dir, "xl", "worksheets", fmt.Sprintf("__sheet%d.xml", sheet.sheetIndex))
 	f, err := os.Open(sheet.sheetPath)
 	if err != nil {
 		return err

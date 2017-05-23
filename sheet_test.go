@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewSheet(t *testing.T) {
-	sheet := NewSheet("hello", 0)
+	sheet := NewSheet("hello", 0, 0)
 	if sheet.xml.Name != "hello" {
 		t.Error(`sheet name should be "hello".`)
 	}
@@ -19,7 +19,7 @@ func TestNewSheet(t *testing.T) {
 func TestOpen(t *testing.T) {
 	os.MkdirAll("temp/xl/worksheets", 0755)
 	defer os.RemoveAll("temp/xl")
-	sheet := NewSheet("hello", 0)
+	sheet := NewSheet("hello", 0, 0)
 	err := sheet.Open("")
 	if err == nil {
 		t.Error("sheet should not be opened. sheet does not exsist.")
@@ -62,7 +62,7 @@ func TestOpen(t *testing.T) {
 }
 func TestClose(t *testing.T) {
 	var err error
-	sheet := NewSheet("sheet", 0)
+	sheet := NewSheet("sheet", 0, 0)
 	if err = sheet.Close(); err != nil {
 		t.Error("sheet should be closed because sheet is not opened.")
 	}
@@ -92,7 +92,7 @@ func TestGetRow(t *testing.T) {
 func TestShowGridlines(t *testing.T) {
 	os.MkdirAll("temp/xl/worksheets", 0755)
 	defer os.RemoveAll("temp/xl")
-	sheet := NewSheet("hoge", 0)
+	sheet := NewSheet("hoge", 0, 0)
 	sheet.ShowGridlines(true)
 	if sheet.sheetView != nil {
 		t.Error("sheetView should be nil.")
@@ -113,7 +113,7 @@ func TestShowGridlines(t *testing.T) {
 	}
 	os.Remove("temp/xl/worksheets/sheet1.xml")
 
-	sheet = NewSheet("hoge", 1)
+	sheet = NewSheet("hoge", 1, 1)
 	sheet.Create("temp")
 	sheet.ShowGridlines(false)
 	if v, err := sheet.sheetView.getAttr("showGridLines"); err != nil {
@@ -137,7 +137,7 @@ func TestColsWidth(t *testing.T) {
 	f, _ := os.Create("temp/xl/worksheets/sheet1.xml")
 	f.WriteString("<worksheet><sheetData></sheetData></worksheet>")
 	f.Close()
-	sheet := NewSheet("sheet1", 0)
+	sheet := NewSheet("sheet1", 0, 0)
 	sheet.Open("temp")
 	defer sheet.Close()
 	sheet.SetColWidth(1.2, 2)
@@ -152,7 +152,7 @@ func TestColsWidth(t *testing.T) {
 	f, _ = os.Create("temp/xl/worksheets/sheet1.xml")
 	f.WriteString(`<worksheet><cols><col min="2" max="6" style="1" width="2.6" customWidth="1"></col></cols><sheetData></sheetData></worksheet>`)
 	f.Close()
-	sheet = NewSheet("sheet1", 0)
+	sheet = NewSheet("sheet1", 0, 0)
 	sheet.Open("temp")
 	defer sheet.Close()
 

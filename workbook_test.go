@@ -198,5 +198,16 @@ func TestCalcPr(t *testing.T) {
 	if _, err := workbook.calcPr.getAttr("fullCalcOnLoad"); err == nil {
 		t.Error("fullCalcOnLoad attribute should not be found.")
 	}
+}
 
+func TestSheetIndex(t *testing.T) {
+	os.Mkdir("temp/out", 0755)
+	defer os.RemoveAll("temp/out")
+	workbook, _ := Open("temp/test2.xlsx")
+	sheet, _ := workbook.OpenSheet("new sheet")
+	if sheet.xml.SheetID != "3" {
+		t.Error("SheetID should be 3 but", sheet.xml.SheetID)
+	}
+	sheet.Close()
+	workbook.Save("temp/hoge.xlsx")
 }

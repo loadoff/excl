@@ -25,6 +25,7 @@ type Workbook struct {
 	TempPath      string
 	types         *ContentTypes
 	opened        bool
+	maxSheetID    int
 	sheets        []*Sheet
 	SharedStrings *SharedStrings
 	workbookRels  *WorkbookRels
@@ -177,8 +178,8 @@ func (workbook *Workbook) Close() error {
 	return workbook.Save("")
 }
 
-// OpenSheet 指定されたシートを開く
-// 存在しない場合は作成する
+// OpenSheet Open specified sheet
+// if there is no specified sheet then create new sheet
 func (workbook *Workbook) OpenSheet(name string) (*Sheet, error) {
 	compName := strings.ToLower(string(norm.NFKC.Bytes([]byte(name))))
 	for _, sheet := range workbook.sheets {
@@ -192,17 +193,18 @@ func (workbook *Workbook) OpenSheet(name string) (*Sheet, error) {
 		}
 		return sheet, nil
 	}
-	count := workbook.types.sheetCount()
-	sheetName := workbook.types.addSheet()
+	count := len(workbook.sheets)
+	sheetName := workbook.types.addSheet(count)
 	workbook.workbookRels.addSheet(sheetName)
-	workbook.sheetsTag.Children = append(workbook.sheetsTag.Children, createSheetTag(name, count+1))
-	sheet := NewSheet(name, count)
+	workbook.sheetsTag.Children = append(workbook.sheetsTag.Children, createSheetTag(name, count+1, workbook.maxSheetID+1))
+	sheet := NewSheet(name, count, workbook.maxSheetID)
 	sheet.sharedStrings = workbook.SharedStrings
 	sheet.Styles = workbook.Styles
 	if err := sheet.Create(workbook.TempPath); err != nil {
 		return nil, err
 	}
 	workbook.sheets = append(workbook.sheets, sheet)
+	workbook.maxSheetID++
 	return sheet, nil
 }
 
@@ -218,10 +220,10 @@ func (workbook *Workbook) SetForceFormulaRecalculation(flg bool) {
 	}
 }
 
-func createSheetTag(name string, id int) *Tag {
+func createSheetTag(name string, id int, sheetID int) *Tag {
 	tag := &Tag{Name: xml.Name{Local: "sheet"}}
 	tag.setAttr("name", name)
-	tag.setAttr("sheetId", strconv.Itoa(id))
+	tag.setAttr("sheetId", strconv.Itoa(sheetID))
 	tag.setAttr("r:id", fmt.Sprintf("rId%d", id))
 	return tag
 }
@@ -307,12 +309,18 @@ func (workbook *Workbook) openWorkbook() error {
 	}
 	for i := range val.Sheets.Sheetlist {
 		sheet := &val.Sheets.Sheetlist[i]
+		index, _ := strconv.Atoi(strings.Replace(sheet.RID, "rId", "", 1))
 		workbook.sheets = append(workbook.sheets,
 			&Sheet{
 				xml:           sheet,
 				Styles:        workbook.Styles,
 				sharedStrings: workbook.SharedStrings,
+				sheetIndex:    index,
 			})
+		sheetID, _ := strconv.Atoi(sheet.SheetID)
+		if workbook.maxSheetID < sheetID {
+			workbook.maxSheetID = sheetID
+		}
 	}
 	tag := &Tag{}
 	f, _ = os.Open(workbookPath)

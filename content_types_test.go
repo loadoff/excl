@@ -46,7 +46,7 @@ func TestAddSheet(t *testing.T) {
 	f.Close()
 	defer os.Remove("./temp/[Content_Types].xml")
 	types, _ := OpenContentTypes("./temp")
-	name := types.addSheet()
+	name := types.addSheet(1)
 	if name != "sheet2.xml" {
 		t.Error(`sheet name should be "sheet2.xml" but [`, name, "]")
 	}
