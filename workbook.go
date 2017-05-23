@@ -234,6 +234,34 @@ func (workbook *Workbook) RenameSheet(old string, new string) {
 	}
 }
 
+// HideSheet hide sheet
+func (workbook *Workbook) HideSheet(name string) {
+	for i, sheet := range workbook.sheets {
+		if sheet.xml.Name != name {
+			continue
+		}
+		switch t := workbook.sheetsTag.Children[i].(type) {
+		case *Tag:
+			t.setAttr("state", "hidden")
+		}
+		break
+	}
+}
+
+// ShowSheet show sheet
+func (workbook *Workbook) ShowSheet(name string) {
+	for i, sheet := range workbook.sheets {
+		if sheet.xml.Name != name {
+			continue
+		}
+		switch t := workbook.sheetsTag.Children[i].(type) {
+		case *Tag:
+			t.deleteAttr("state")
+		}
+		break
+	}
+}
+
 func createSheetTag(name string, id int, sheetID int) *Tag {
 	tag := &Tag{Name: xml.Name{Local: "sheet"}}
 	tag.setAttr("name", name)
