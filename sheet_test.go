@@ -1,6 +1,7 @@
 package excl
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -173,7 +174,7 @@ func BenchmarkCreateRows(b *testing.B) {
 	utf8 := "あいうえお"
 	defer f.Close()
 	defer f2.Close()
-	sharedStrings := &SharedStrings{tempFile: f}
+	sharedStrings := &SharedStrings{tempFile: f, buffer: &bytes.Buffer{}}
 	sheet := &Sheet{sharedStrings: sharedStrings, tempFile: f2}
 	for j := 0; j < 10; j++ {
 		rows := sheet.CreateRows(10000*j+1, 10000*(j+1))

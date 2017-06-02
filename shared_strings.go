@@ -17,6 +17,7 @@ type SharedStrings struct {
 	count       int
 	dir         string
 	afterString string
+	buffer      *bytes.Buffer
 }
 
 // OpenSharedStrings 新しいSharedString構造体を作成する
@@ -45,7 +46,7 @@ func OpenSharedStrings(dir string) (*SharedStrings, error) {
 		return nil, err
 	}
 	f.Close()
-	ss := &SharedStrings{dir: filepath.Join(dir, "xl")}
+	ss := &SharedStrings{dir: filepath.Join(dir, "xl"), buffer: &bytes.Buffer{}}
 	ss.setStringCount(tag)
 	if ss.count == -1 {
 		return nil, errors.New("The sharedStrings.xml file is currupt.")
@@ -81,6 +82,7 @@ func (ss *SharedStrings) Close() error {
 	defer ss.tempFile.Close()
 	defer ss.file.Close()
 	var err error
+	io.Copy(ss.tempFile, ss.buffer)
 	ss.tempFile.Seek(0, os.SEEK_SET)
 	if _, err = io.Copy(ss.file, ss.tempFile); err != nil {
 		return err
@@ -153,12 +155,16 @@ func escapeText(w io.Writer, s []byte) error {
 // 戻り値はインデックス情報(0スタート)
 func (ss *SharedStrings) AddString(text string) int {
 	if len(text) != 0 && (text[0] == ' ' || text[len(text)-1] == ' ') {
-		ss.tempFile.WriteString(`<si><t xml:space="preserve">`)
+		ss.buffer.WriteString(`<si><t xml:space="preserve">`)
 	} else {
-		ss.tempFile.WriteString("<si><t>")
+		ss.buffer.WriteString("<si><t>")
 	}
-	escapeText(ss.tempFile, []byte(text))
-	ss.tempFile.WriteString("</t></si>")
+	escapeText(ss.buffer, []byte(text))
+	ss.buffer.WriteString("</t></si>")
+	if ss.buffer.Len() > 1024 {
+		io.Copy(ss.tempFile, ss.buffer)
+		ss.buffer = &bytes.Buffer{}
+	}
 	ss.count++
 	return ss.count - 1
 }

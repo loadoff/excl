@@ -164,10 +164,8 @@ func (row *Row) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name = row.row.Name
 	start.Attr = row.row.Attr
 	e.EncodeToken(start)
-	for _, c := range row.cells {
-		if err := e.Encode(c.cell); err != nil {
-			return err
-		}
+	if err := e.Encode(row.cells); err != nil {
+		return err
 	}
 	e.EncodeToken(start.End())
 	return nil
