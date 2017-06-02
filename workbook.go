@@ -404,7 +404,7 @@ func getFiles(dir string) []string {
 	return fileList
 }
 
-// unzip はzipを解凍する
+// unzip unzip excel file
 func unzip(src, dest string) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
@@ -450,19 +450,20 @@ func createZip(zipPath string, fileList []string, replace string) {
 	defer zipfile.Close()
 	w := zip.NewWriter(zipfile)
 	for _, file := range fileList {
-		body, err := ioutil.ReadFile(file)
+		read, err := os.Open(file)
+		defer read.Close()
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println(err)
 			continue
 		}
 		f, err := w.Create(strings.Replace(file, replace+"/", "", 1))
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println(err)
 			continue
 		}
-		_, err = f.Write(body)
-		if err != nil {
-			fmt.Println(err.Error())
+		if _, err = io.Copy(f, read); err != nil {
+			fmt.Println(err)
+			continue
 		}
 	}
 	w.Close()

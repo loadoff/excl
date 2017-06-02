@@ -1,6 +1,7 @@
 package excl
 
 import (
+	"bytes"
 	"encoding/xml"
 	"os"
 	"testing"
@@ -70,7 +71,7 @@ func TestSetNumber(t *testing.T) {
 
 func TestSetString(t *testing.T) {
 	f, _ := os.Create("temp/sharedStrings.xml")
-	sharedStrings := &SharedStrings{count: 0, tempFile: f}
+	sharedStrings := &SharedStrings{count: 0, tempFile: f, buffer: &bytes.Buffer{}}
 	tag := &Tag{}
 	tag.setAttr("r", "AB12")
 	cell := &Cell{cell: tag, colNo: 1}

@@ -166,3 +166,13 @@ func (cell *Cell) resetStyleIndex() {
 		cell.cell.setAttr("s", strconv.Itoa(index))
 	}
 }
+
+// MarshalXML create xml for cell
+func (cell *Cell) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name = cell.cell.Name
+	start.Attr = cell.cell.Attr
+	e.EncodeToken(start)
+	e.Encode(cell.cell.Children)
+	e.EncodeToken(start.End())
+	return nil
+}

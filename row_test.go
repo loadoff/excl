@@ -104,7 +104,7 @@ func TestSetRowString(t *testing.T) {
 		f.Close()
 		os.Remove("temp/test.xml")
 	}()
-	ss := &SharedStrings{tempFile: f}
+	ss := &SharedStrings{tempFile: f, buffer: &bytes.Buffer{}}
 	tag := &Tag{}
 	tag.setAttr("r", "10")
 	row := NewRow(tag, ss, nil)
