@@ -22,14 +22,11 @@ func (t *Tag) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	for _, v := range t.Children {
 		switch v.(type) {
 		case *Tag:
-			child := v.(*Tag)
-			if err := e.Encode(child); err != nil {
+			if err := e.Encode(v); err != nil {
 				return err
 			}
 		case xml.CharData:
 			e.EncodeToken(v.(xml.CharData))
-		case xml.Comment:
-			e.EncodeToken(v.(xml.Comment))
 		}
 	}
 	e.EncodeToken(start.End())

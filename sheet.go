@@ -328,7 +328,7 @@ func getColInfos(tag *Tag) []colInfo {
 			if t.Name.Local != "col" {
 				continue
 			}
-			var info colInfo
+			info := colInfo{width: -1}
 			for _, attr := range t.Attr {
 				if attr.Name.Local == "min" {
 					info.min, _ = strconv.Atoi(attr.Value)
@@ -442,11 +442,15 @@ func (info colInfo) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	if info.style != "" {
 		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "style"}, Value: info.style})
 	}
-	if info.customWidth {
-		start.Attr = append(start.Attr, []xml.Attr{
-			xml.Attr{Name: xml.Name{Local: "width"}, Value: fmt.Sprint(info.width)},
-			xml.Attr{Name: xml.Name{Local: "customWidth"}, Value: "1"},
-		}...)
+	if info.customWidth || info.width != -1 {
+		if info.customWidth {
+			start.Attr = append(start.Attr, []xml.Attr{
+				xml.Attr{Name: xml.Name{Local: "width"}, Value: fmt.Sprint(info.width)},
+				xml.Attr{Name: xml.Name{Local: "customWidth"}, Value: "1"},
+			}...)
+		} else {
+			start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "width"}, Value: fmt.Sprint(info.width)})
+		}
 	}
 	e.EncodeToken(start)
 	e.EncodeToken(start.End())

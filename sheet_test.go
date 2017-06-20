@@ -136,7 +136,7 @@ func TestColsWidth(t *testing.T) {
 	os.MkdirAll("temp/xl/worksheets", 0755)
 	defer os.RemoveAll("temp/xl")
 	f, _ := os.Create("temp/xl/worksheets/sheet1.xml")
-	f.WriteString("<worksheet><sheetData></sheetData></worksheet>")
+	f.WriteString(`<worksheet><cols><col min="3" max="3" width="1.3"></col></cols><sheetData></sheetData></worksheet>`)
 	f.Close()
 	sheet := NewSheet("sheet1", 0, 0)
 	sheet.Open("temp")
@@ -145,7 +145,7 @@ func TestColsWidth(t *testing.T) {
 	sheet.SetColWidth(1.1, 1)
 	sheet.Close()
 	b, _ := ioutil.ReadFile("temp/xl/worksheets/sheet1.xml")
-	str := `<worksheet><cols><col min="1" max="1" width="1.1" customWidth="1"></col><col min="2" max="2" width="1.2" customWidth="1"></col></cols><sheetData></sheetData></worksheet>`
+	str := `<worksheet><cols><col min="1" max="1" width="1.1" customWidth="1"></col><col min="2" max="2" width="1.2" customWidth="1"></col><col min="3" max="3" width="1.3"></col></cols><sheetData></sheetData></worksheet>`
 	if string(b) != str {
 		t.Error("file string should be [", str, "] but", string(b))
 	}
