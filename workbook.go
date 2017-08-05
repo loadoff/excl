@@ -108,7 +108,7 @@ func Open(path string) (*Workbook, error) {
 	}()
 
 	if !isFileExist(filepath.Join(dir, "[Content_Types].xml")) {
-		return nil, errors.New("This excel file is corrupt.")
+		return nil, errors.New("this excel file is corrupt.")
 	}
 	if !isFileExist(filepath.Join(dir, "xl", "workbook.xml")) {
 		return nil, errors.New("This excel file is corrupt.")

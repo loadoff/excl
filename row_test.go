@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestNewRow(t *testing.T) {
@@ -138,8 +139,45 @@ func TestSetRowNumber(t *testing.T) {
 	if string(tag.Children[0].(xml.CharData)) != "20" {
 		t.Error("cell value should be 20 but", string(tag.Children[0].(xml.CharData)))
 	}
+
+	c = row.SetNumber(20.1, 11)
+	tag = c.cell.Children[0].(*Tag)
+	if string(tag.Children[0].(xml.CharData)) != "20.1" {
+		t.Error("cell value should be 20 but", string(tag.Children[0].(xml.CharData)))
+	}
 }
 
+func TestSetRowDate(t *testing.T) {
+	tag := &Tag{}
+	tag.setAttr("r", "10")
+	row := NewRow(tag, nil, &Styles{})
+	now := time.Now()
+	c := row.SetDate(now, 10)
+	if val, _ := c.cell.getAttr("t"); val != "d" {
+		t.Error("cell attribute should be d but", val)
+	}
+	tag = c.cell.Children[0].(*Tag)
+	if string(tag.Children[0].(xml.CharData)) != now.Format("2006-01-02T15:04:05.999999999") {
+		t.Error("cell value should be", now.Format("2006-01-02T15:04:05.999999999"), "but", string(tag.Children[0].(xml.CharData)))
+	}
+}
+
+func TestSetRowFunction(t *testing.T) {
+	tag := &Tag{}
+	tag.setAttr("r", "10")
+	row := NewRow(tag, nil, &Styles{})
+	c := row.SetFunction("SUM(A1:A2)", 10)
+	if val, _ := c.cell.getAttr("t"); val != "" {
+		t.Error("cell attribute should be empty but", val)
+	}
+	tag = c.cell.Children[0].(*Tag)
+	if tag.Name.Local != "f" {
+		t.Error("tag name should be f but", tag.Name.Local)
+	}
+	if string(tag.Children[0].(xml.CharData)) != "SUM(A1:A2)" {
+		t.Error("cell value should be SUM(A1:A2) but", string(tag.Children[0].(xml.CharData)))
+	}
+}
 func TestColStringPosition(t *testing.T) {
 	if ColStringPosition(26) != "Z" {
 		t.Error("col id should be Z but", ColStringPosition(26))

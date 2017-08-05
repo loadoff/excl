@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestNewCell(t *testing.T) {
@@ -62,11 +63,55 @@ func TestSetNumber(t *testing.T) {
 	tag.Attr = []xml.Attr{attr, typeAttr}
 	cell = &Cell{cell: tag, colNo: 1}
 	cell.SetNumber("456")
-	for _, attr := range cell.cell.Attr {
-		if attr.Name.Local == "t" {
-			t.Error("t attribute should be deleted.")
-		}
+	if _, err := cell.cell.getAttr("t"); err == nil {
+		t.Error("t attribute should be deleted.")
 	}
+
+	i := 123
+	var i16 int16 = 234
+	var i32 int32 = 345
+	var i64 int64 = 456
+	var f32 float32 = 56.78
+	f64 := 67.89
+
+	cell = &Cell{cell: tag, colNo: 1}
+	cell.SetNumber(i)
+	val = cell.cell.Children[0].(*Tag)
+	data := val.Children[0].(xml.CharData)
+	if string(data) != "123" {
+		t.Error("value should be 123 but [", data, "]")
+	}
+	cell.SetNumber(i16)
+	val = cell.cell.Children[0].(*Tag)
+	data = val.Children[0].(xml.CharData)
+	if string(data) != "234" {
+		t.Error("value should be 234 but [", data, "]")
+	}
+	cell.SetNumber(i32)
+	val = cell.cell.Children[0].(*Tag)
+	data = val.Children[0].(xml.CharData)
+	if string(data) != "345" {
+		t.Error("value should be 345 but [", data, "]")
+	}
+	cell.SetNumber(i64)
+	val = cell.cell.Children[0].(*Tag)
+	data = val.Children[0].(xml.CharData)
+	if string(data) != "456" {
+		t.Error("value should be 456 but [", data, "]")
+	}
+	cell.SetNumber(f32)
+	val = cell.cell.Children[0].(*Tag)
+	data = val.Children[0].(xml.CharData)
+	if string(data) != "56.78" {
+		t.Error("value should be 56.78 but [", data, "]")
+	}
+	cell.SetNumber(f64)
+	val = cell.cell.Children[0].(*Tag)
+	data = val.Children[0].(xml.CharData)
+	if string(data) != "67.89" {
+		t.Error("value should be 67.89 but [", data, "]")
+	}
+
 }
 
 func TestSetString(t *testing.T) {
@@ -87,6 +132,34 @@ func TestSetString(t *testing.T) {
 	}
 	f.Close()
 	os.Remove("temp/sharedStrings.xml")
+}
+
+func TestSetDate(t *testing.T) {
+	cell := &Cell{cell: &Tag{}, styles: &Styles{}}
+	now := time.Now()
+	cell.SetDate(now)
+	if val, _ := cell.cell.getAttr("t"); val != "d" {
+		t.Error("cell t attribute should be d but [", val, "]")
+	}
+	cTag := cell.cell.Children[0].(*Tag)
+	if string(cTag.Children[0].(xml.CharData)) != now.Format("2006-01-02T15:04:05.999999999") {
+		t.Error("cell value should be ", now.Format("2006-01-02T15:04:05.999999999"), " but ", string(cTag.Children[0].(xml.CharData)))
+	}
+	if cell.style.NumFmtID != 14 {
+		t.Error("cell NumFmtID should be 14 but", cell.style.NumFmtID)
+	}
+}
+
+func TestSetFunction(t *testing.T) {
+	cell := &Cell{cell: &Tag{}, styles: &Styles{}}
+	cell.SetFunction("SUM(A1:B1)")
+	cTag := cell.cell.Children[0].(*Tag)
+	if cTag.Name.Local != "f" {
+		t.Error("tag name should be f but", cTag.Name.Local)
+	}
+	if string(cTag.Children[0].(xml.CharData)) != "SUM(A1:B1)" {
+		t.Error("cell value should be SUM(A1:B1) but ", string(cTag.Children[0].(xml.CharData)))
+	}
 }
 
 func TestSetCellNumFmt(t *testing.T) {
