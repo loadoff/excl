@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"time"
 )
 
 // Row 行の構造体
@@ -94,13 +95,6 @@ func (row *Row) CreateCells(from int, to int) []*Cell {
 	return row.cells
 }
 
-// ByCell セルに対するソート用
-type ByCell []*Cell
-
-func (c ByCell) Len() int           { return len(c) }
-func (c ByCell) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
-func (c ByCell) Less(i, j int) bool { return c[i].colNo < c[j].colNo }
-
 // GetCell セル番号のセルを取得する
 func (row *Row) GetCell(colNo int) *Cell {
 
@@ -124,23 +118,37 @@ func (row *Row) GetCell(colNo int) *Cell {
 
 	cell := NewCell(tag, row.sharedStrings, row.styles)
 	row.cells = append(row.cells, cell)
-	sort.Sort(ByCell(row.cells))
+	sort.Slice(row.cells, func(i, j int) bool {
+		return row.cells[i].colNo < row.cells[j].colNo
+	})
 	return cell
 }
 
-// SetString 文字を出力する
+// SetString set string at a row
 func (row *Row) SetString(val string, colNo int) *Cell {
 	cell := row.GetCell(colNo).SetString(val)
 	return cell
 }
 
-// SetNumber 数値を出力する
-func (row *Row) SetNumber(val string, colNo int) *Cell {
+// SetNumber set number at a row
+func (row *Row) SetNumber(val interface{}, colNo int) *Cell {
 	cell := row.GetCell(colNo).SetNumber(val)
 	return cell
 }
 
-// ColStringPosition カラム番号からA-Z文字列を取得する
+// SetFunction set a function at a row
+func (row *Row) SetFunction(val string, colNo int) *Cell {
+	cell := row.GetCell(colNo).SetFunction(val)
+	return cell
+}
+
+// SetDate set a date at a row
+func (row *Row) SetDate(val time.Time, colNo int) *Cell {
+	cell := row.GetCell(colNo).SetDate(val)
+	return cell
+}
+
+// ColStringPosition obtain AtoZ column string from column no
 func ColStringPosition(num int) string {
 	atoz := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
 	if num <= 26 {
@@ -149,7 +157,7 @@ func ColStringPosition(num int) string {
 	return ColStringPosition((num-1)/26) + atoz[(num-1)%26]
 }
 
-// ColNumPosition カラム番号をA-Z文字列から取得する
+// ColNumPosition obtain column no from AtoZ column string
 func ColNumPosition(col string) int {
 	var num int
 	for i := len(col) - 1; i >= 0; i-- {

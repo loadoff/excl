@@ -26,8 +26,16 @@ r := s.GetRow(1)
 c := r.GetCell(1)
 // セルに10を出力
 c.SetNumber("10")
+// セルに1を出力
+s.GetRow(2).GetCell(1).SetNumber(1)
+// セルに1.1を出力
+s.GetRow(3).GetCell(1).SetNumber(1.1)
 // 2列目のセルにABCDEという文字列を出力
 c = r.SetString("ABCDE", 2)
+// セルに日付を出力
+s.GetRow(4).GetCell(1).SetDate(time.Now())
+// セルに数式を出力
+s.GetRow(5).GetCell(1).SetFunction("SUM(A2:A3)")
 // シートを閉じる
 s.Close()
 // 保存

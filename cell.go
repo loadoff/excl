@@ -2,8 +2,10 @@ package excl
 
 import (
 	"encoding/xml"
+	"fmt"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 // Cell はセル一つ一つに対する構造体
@@ -59,10 +61,52 @@ func (cell *Cell) SetString(val string) *Cell {
 	return cell
 }
 
-// SetNumber 数値を追加する
-func (cell *Cell) SetNumber(val string) *Cell {
-	cell.setValue(val)
+// SetNumber set a number in a cell
+func (cell *Cell) SetNumber(val interface{}) *Cell {
+	var str string
+	switch t := val.(type) {
+	case int:
+		str = strconv.Itoa(t)
+	case int16:
+		str = strconv.FormatInt(int64(t), 10)
+	case int32:
+		str = strconv.FormatInt(int64(t), 10)
+	case int64:
+		str = strconv.FormatInt(t, 10)
+	case float32:
+		str = fmt.Sprint(t)
+	case float64:
+		str = fmt.Sprint(t)
+	case string:
+		str = t
+	default:
+		panic("")
+	}
+	cell.setValue(str)
 	cell.cell.deleteAttr("t")
+	return cell
+}
+
+// SetFunction set a function in a cell
+func (cell *Cell) SetFunction(val string) *Cell {
+	tag := &Tag{
+		Name: xml.Name{Local: "f"},
+		Children: []interface{}{
+			xml.CharData(val),
+		},
+	}
+	cell.cell.Children = []interface{}{tag}
+	cell.cell.deleteAttr("t")
+	return cell
+}
+
+// SetDate set a date in a cell
+func (cell *Cell) SetDate(val time.Time) *Cell {
+	cell.cell.setAttr("t", "d")
+	cell.setValue(val.Format("2006-01-02T15:04:05.999999999"))
+	if cell.GetStyle().NumFmtID == 0 {
+		cell.SetStyle(&Style{NumFmtID: 14})
+	}
 	return cell
 }
 
