@@ -107,17 +107,11 @@ func Open(path string) (*Workbook, error) {
 		}
 	}()
 
-	if !isFileExist(filepath.Join(dir, "[Content_Types].xml")) {
-		return nil, errors.New("this excel file is corrupt.")
-	}
-	if !isFileExist(filepath.Join(dir, "xl", "workbook.xml")) {
-		return nil, errors.New("This excel file is corrupt.")
-	}
-	if !isFileExist(filepath.Join(dir, "xl", "_rels", "workbook.xml.rels")) {
-		return nil, errors.New("This excel file is corrupt.")
-	}
-	if !isFileExist(filepath.Join(dir, "xl", "styles.xml")) {
-		return nil, errors.New("This excel file is corrupt.")
+	if !isFileExist(filepath.Join(dir, "[Content_Types].xml")) ||
+		!isFileExist(filepath.Join(dir, "xl", "workbook.xml")) ||
+		!isFileExist(filepath.Join(dir, "xl", "_rels", "workbook.xml.rels")) ||
+		!isFileExist(filepath.Join(dir, "xl", "styles.xml")) {
+		return nil, fmt.Errorf("this excel file is corrupt")
 	}
 	err = workbook.setInfo()
 	if err != nil {
@@ -127,7 +121,7 @@ func Open(path string) (*Workbook, error) {
 	return workbook, nil
 }
 
-// Save 操作中のブックを保存し閉じる
+// Save save and close a workbook
 func (workbook *Workbook) Save(path string) error {
 	if workbook == nil || !workbook.opened {
 		return nil
