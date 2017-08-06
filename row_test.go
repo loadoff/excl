@@ -162,11 +162,11 @@ func TestSetRowDate(t *testing.T) {
 	}
 }
 
-func TestSetRowFunction(t *testing.T) {
+func TestSetRowFormula(t *testing.T) {
 	tag := &Tag{}
 	tag.setAttr("r", "10")
 	row := NewRow(tag, nil, &Styles{})
-	c := row.SetFunction("SUM(A1:A2)", 10)
+	c := row.SetFormula("SUM(A1:A2)", 10)
 	if val, _ := c.cell.getAttr("t"); val != "" {
 		t.Error("cell attribute should be empty but", val)
 	}

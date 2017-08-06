@@ -136,9 +136,9 @@ func (row *Row) SetNumber(val interface{}, colNo int) *Cell {
 	return cell
 }
 
-// SetFunction set a function at a row
-func (row *Row) SetFunction(val string, colNo int) *Cell {
-	cell := row.GetCell(colNo).SetFunction(val)
+// SetFormula set a formula at a row
+func (row *Row) SetFormula(val string, colNo int) *Cell {
+	cell := row.GetCell(colNo).SetFormula(val)
 	return cell
 }
 

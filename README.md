@@ -35,7 +35,7 @@ c = r.SetString("ABCDE", 2)
 // セルに日付を出力
 s.GetRow(4).GetCell(1).SetDate(time.Now())
 // セルに数式を出力
-s.GetRow(5).GetCell(1).SetFunction("SUM(A2:A3)")
+s.GetRow(5).GetCell(1).SetFormula("SUM(A2:A3)")
 // シートを閉じる
 s.Close()
 // 保存
