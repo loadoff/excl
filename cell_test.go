@@ -150,9 +150,9 @@ func TestSetDate(t *testing.T) {
 	}
 }
 
-func TestSetFunction(t *testing.T) {
+func TestSetFormula(t *testing.T) {
 	cell := &Cell{cell: &Tag{}, styles: &Styles{}}
-	cell.SetFunction("SUM(A1:B1)")
+	cell.SetFormula("SUM(A1:B1)")
 	cTag := cell.cell.Children[0].(*Tag)
 	if cTag.Name.Local != "f" {
 		t.Error("tag name should be f but", cTag.Name.Local)

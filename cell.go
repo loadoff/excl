@@ -87,8 +87,8 @@ func (cell *Cell) SetNumber(val interface{}) *Cell {
 	return cell
 }
 
-// SetFunction set a function in a cell
-func (cell *Cell) SetFunction(val string) *Cell {
+// SetFormula set a formula in a cell
+func (cell *Cell) SetFormula(val string) *Cell {
 	tag := &Tag{
 		Name: xml.Name{Local: "f"},
 		Children: []interface{}{
