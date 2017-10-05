@@ -34,22 +34,20 @@ func TestOpenWorkbookRels(t *testing.T) {
 
 func TestAddSheetWorkbookRels(t *testing.T) {
 	wbr := &WorkbookRels{rels: &Relationships{}}
-	wbr.addSheet("sheet1")
+	rid1 := wbr.addSheet("sheet1")
 	if len(wbr.rels.Rels) != 1 {
 		t.Error("Rels count should be 1 but [", len(wbr.rels.Rels), "]")
 	}
-	wbr.addSharedStrings()
+	rid2 := wbr.addSharedStrings()
 	wbr.addSheet("sheet2")
 	wbr.addSharedStrings()
-	wbr.setRID()
-	if wbr.rels.Rels[0].ID != "rId2" {
-		t.Error("id should be rId2 but [", wbr.rels.Rels[0].ID, "]", wbr.rels.Rels[0].Target)
+	if wbr.rels.Rels[0].ID != rid1 {
+		t.Error("id should be [", rid1, "] but [", wbr.rels.Rels[0].ID, "]", wbr.rels.Rels[0].Target)
 	}
-	if wbr.rels.Rels[1].ID != "rId3" {
-		t.Error("id should be rId3 but [", wbr.rels.Rels[1].ID, "]")
+	if wbr.rels.Rels[1].ID != rid2 {
+		t.Error("id should be [", rid2, "] but [", wbr.rels.Rels[1].ID, "]")
 	}
 	wbr.addSheet("sheet3")
-	wbr.setRID()
 	err := wbr.Close()
 	if err == nil {
 		t.Error("close error should be happen.")
