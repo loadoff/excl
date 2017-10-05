@@ -3,12 +3,11 @@ package excl
 import (
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
+	"strings"
+	"time"
 )
 
 // WorkbookRels workbook.xml.relの情報をもつ構造体
@@ -49,7 +48,7 @@ func createWorkbookRels(dir string) error {
 	return nil
 }
 
-// OpenWorkbookRels workbook.xml.relsファイルを開く
+// OpenWorkbookRels open workbook.xml.rels
 func OpenWorkbookRels(dir string) (*WorkbookRels, error) {
 	path := filepath.Join(dir, "xl", "_rels", "workbook.xml.rels")
 	if !isFileExist(path) {
@@ -72,12 +71,11 @@ func OpenWorkbookRels(dir string) (*WorkbookRels, error) {
 	return &WorkbookRels{rels: rels, path: path}, nil
 }
 
-// Close workbook.xml.relsファイルを閉じる
+// Close close workbook.xml.rels
 func (wbr *WorkbookRels) Close() error {
 	if wbr == nil {
 		return nil
 	}
-	wbr.setRID()
 	f, err := os.Create(wbr.path)
 	if err != nil {
 		return err
@@ -92,49 +90,31 @@ func (wbr *WorkbookRels) Close() error {
 	return nil
 }
 
-// addSharedStrings sharedStrings.xmlファイルの関連情報を追加する
-func (wbr *WorkbookRels) addSharedStrings() {
+// addSharedStrings add sharedStrings.xml information
+func (wbr *WorkbookRels) addSharedStrings() string {
 	for _, rel := range wbr.rels.Rels {
 		if rel.Target == "sharedStrings.xml" {
-			return
+			return rel.ID
 		}
 	}
 	rel := relationship{
 		XMLName: xml.Name{Local: "Relationship"},
 		Target:  "sharedStrings.xml",
 		Type:    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings",
+		ID:      strings.Replace(time.Now().Format("rId060102030405.000"), ".", "", 1) + random(),
 	}
 	wbr.rels.Rels = append(wbr.rels.Rels, rel)
+	return rel.ID
 }
 
-// addSheet workbook.xml.relsにシート情報を追加する
-func (wbr *WorkbookRels) addSheet(name string) {
+// addSheet add sheet information to workbook.xml.rels
+func (wbr *WorkbookRels) addSheet(name string) string {
 	rel := relationship{
 		XMLName: xml.Name{Local: "Relationship"},
 		Target:  "worksheets/" + name,
 		Type:    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet",
+		ID:      strings.Replace(time.Now().Format("rId060102030405.000"), ".", "", 1) + random(),
 	}
 	wbr.rels.Rels = append(wbr.rels.Rels, rel)
-}
-
-func (wbr *WorkbookRels) setRID() {
-	rep := regexp.MustCompile(`worksheets\/sheet([0-9]+)\.xml`)
-	id := 1
-	for index, rel := range wbr.rels.Rels {
-		if !rep.MatchString(rel.Target) {
-			continue
-		}
-		i, _ := strconv.Atoi(rep.ReplaceAllString(rel.Target, "$1"))
-		wbr.rels.Rels[index].ID = fmt.Sprintf("rId%d", i)
-		if id < i {
-			id = i
-		}
-	}
-	for index, rel := range wbr.rels.Rels {
-		if rep.MatchString(rel.Target) {
-			continue
-		}
-		id++
-		wbr.rels.Rels[index].ID = fmt.Sprintf("rId%d", id)
-	}
+	return rel.ID
 }

@@ -189,8 +189,8 @@ func (workbook *Workbook) OpenSheet(name string) (*Sheet, error) {
 	}
 	count := len(workbook.sheets)
 	sheetName := workbook.types.addSheet(count)
-	workbook.workbookRels.addSheet(sheetName)
-	workbook.sheetsTag.Children = append(workbook.sheetsTag.Children, createSheetTag(name, count+1, workbook.maxSheetID+1))
+	rid := workbook.workbookRels.addSheet(sheetName)
+	workbook.sheetsTag.Children = append(workbook.sheetsTag.Children, createSheetTag(name, rid, workbook.maxSheetID+1))
 	sheet := NewSheet(name, count, workbook.maxSheetID)
 	sheet.sharedStrings = workbook.SharedStrings
 	sheet.Styles = workbook.Styles
@@ -256,11 +256,11 @@ func (workbook *Workbook) ShowSheet(name string) {
 	}
 }
 
-func createSheetTag(name string, id int, sheetID int) *Tag {
+func createSheetTag(name string, rid string, sheetID int) *Tag {
 	tag := &Tag{Name: xml.Name{Local: "sheet"}}
 	tag.setAttr("name", name)
 	tag.setAttr("sheetId", strconv.Itoa(sheetID))
-	tag.setAttr("r:id", fmt.Sprintf("rId%d", id))
+	tag.setAttr("r:id", rid)
 	return tag
 }
 
