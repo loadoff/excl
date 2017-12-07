@@ -12,19 +12,20 @@ const defaultMaxNumfmt = 200
 
 // Styles スタイルの情報を持った構造体
 type Styles struct {
-	path         string
-	styles       *Tag
-	numFmts      *Tag
-	fonts        *Tag
-	fills        *Tag
-	borders      *Tag
-	cellStyleXfs *Tag
-	cellXfs      *Tag
-	styleList    []*Style
-	numFmtNumber int
-	fontCount    int
-	fillCount    int
-	borderCount  int
+	path             string
+	styles           *Tag
+	numFmts          *Tag
+	fonts            *Tag
+	fills            *Tag
+	borders          *Tag
+	cellStyleXfs     *Tag
+	cellXfs          *Tag
+	styleList        []*Style
+	numFmtNumber     int
+	fontCount        int
+	fillCount        int
+	borderCount      int
+	backgroundColors map[string]int
 }
 
 // Style セルの書式情報
@@ -330,6 +331,11 @@ func (styles *Styles) SetFont(font Font) int {
 
 // SetBackgroundColor 背景色を追加する
 func (styles *Styles) SetBackgroundColor(color string) int {
+	if styles.backgroundColors == nil {
+		styles.backgroundColors = map[string]int{}
+	} else if val, ok := styles.backgroundColors[color]; ok {
+		return val
+	}
 	tag := &Tag{Name: xml.Name{Local: "fill"}}
 	patternFill := &Tag{Name: xml.Name{Local: "patternFill"}}
 	patternFill.setAttr("patternType", "solid")
@@ -338,6 +344,7 @@ func (styles *Styles) SetBackgroundColor(color string) int {
 	patternFill.Children = []interface{}{fgColor}
 	tag.Children = []interface{}{patternFill}
 	styles.fills.Children = append(styles.fills.Children, tag)
+	styles.backgroundColors[color] = styles.fillCount
 	styles.fillCount++
 	return styles.fillCount - 1
 }

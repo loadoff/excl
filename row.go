@@ -89,7 +89,7 @@ func (row *Row) CreateCells(from int, to int) []*Cell {
 				}
 			}
 		}
-		cells[i-1] = &Cell{cell: tag, colNo: i, sharedStrings: row.sharedStrings, styleIndex: style}
+		cells[i-1] = &Cell{cell: tag, colNo: i, sharedStrings: row.sharedStrings, styleIndex: style, styles: row.styles}
 	}
 	row.cells = cells
 	return row.cells
@@ -98,11 +98,13 @@ func (row *Row) CreateCells(from int, to int) []*Cell {
 // GetCell セル番号のセルを取得する
 func (row *Row) GetCell(colNo int) *Cell {
 
-	for _, cell := range row.cells {
+	for i := len(row.cells) - 1; i >= 0; i-- {
+		//	for _, cell := range row.cells {
+		cell := row.cells[i]
 		if cell.colNo == colNo {
 			return cell
 		}
-		if cell.colNo > colNo {
+		if cell.colNo < colNo {
 			break
 		}
 	}
@@ -118,9 +120,6 @@ func (row *Row) GetCell(colNo int) *Cell {
 
 	cell := NewCell(tag, row.sharedStrings, row.styles)
 	row.cells = append(row.cells, cell)
-	sort.Slice(row.cells, func(i, j int) bool {
-		return row.cells[i].colNo < row.cells[j].colNo
-	})
 	return cell
 }
 
@@ -175,6 +174,9 @@ func ColNumPosition(col string) int {
 
 // MarshalXML Create xml tags
 func (row *Row) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	sort.Slice(row.cells, func(i, j int) bool {
+		return row.cells[i].colNo < row.cells[j].colNo
+	})
 	start.Name = row.row.Name
 	start.Attr = row.row.Attr
 	e.EncodeToken(start)
