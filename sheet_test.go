@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewSheet(t *testing.T) {
-	sheet := NewSheet("hello", 0, 0)
+	sheet := newSheet("hello", 0, "rId1", "worksheets/sheet1.xml")
 	if sheet.xml.Name != "hello" {
 		t.Error(`sheet name should be "hello".`)
 	}
@@ -20,7 +20,7 @@ func TestNewSheet(t *testing.T) {
 func TestOpen(t *testing.T) {
 	os.MkdirAll("temp/xl/worksheets", 0755)
 	defer os.RemoveAll("temp/xl")
-	sheet := NewSheet("hello", 0, 0)
+	sheet := newSheet("hello", 0, "rId1", "worksheets/sheet1.xml")
 	err := sheet.Open("")
 	if err == nil {
 		t.Error("sheet should not be opened. sheet does not exsist.")
@@ -63,7 +63,7 @@ func TestOpen(t *testing.T) {
 }
 func TestClose(t *testing.T) {
 	var err error
-	sheet := NewSheet("sheet", 0, 0)
+	sheet := newSheet("sheet", 0, "rId1", "worksheets/sheet1.xml")
 	if err = sheet.Close(); err != nil {
 		t.Error("sheet should be closed because sheet is not opened.")
 	}
@@ -93,13 +93,14 @@ func TestGetRow(t *testing.T) {
 func TestShowGridlines(t *testing.T) {
 	os.MkdirAll("temp/xl/worksheets", 0755)
 	defer os.RemoveAll("temp/xl")
-	sheet := NewSheet("hoge", 0, 0)
+	sheet := newSheet("hoge", 0, "rId1", "worksheets/sheet1.xml")
 	sheet.ShowGridlines(true)
 	if sheet.sheetView != nil {
 		t.Error("sheetView should be nil.")
 	}
 	sheet.Create("temp")
 	sheet.ShowGridlines(true)
+
 	if v, err := sheet.sheetView.getAttr("showGridLines"); err != nil {
 		t.Error("showGridLines should be exist.")
 	} else if v != "1" {
@@ -114,7 +115,7 @@ func TestShowGridlines(t *testing.T) {
 	}
 	os.Remove("temp/xl/worksheets/sheet1.xml")
 
-	sheet = NewSheet("hoge", 1, 1)
+	sheet = newSheet("hoge", 1, "rId2", "worksheets/sheet2.xml")
 	sheet.Create("temp")
 	sheet.ShowGridlines(false)
 	if v, err := sheet.sheetView.getAttr("showGridLines"); err != nil {
@@ -138,7 +139,7 @@ func TestColsWidth(t *testing.T) {
 	f, _ := os.Create("temp/xl/worksheets/sheet1.xml")
 	f.WriteString(`<worksheet><cols><col min="3" max="3" width="1.3"></col></cols><sheetData></sheetData></worksheet>`)
 	f.Close()
-	sheet := NewSheet("sheet1", 0, 0)
+	sheet := newSheet("sheet1", 0, "rId1", "worksheets/sheet1.xml")
 	sheet.Open("temp")
 	defer sheet.Close()
 	sheet.SetColWidth(1.2, 2)
@@ -153,7 +154,7 @@ func TestColsWidth(t *testing.T) {
 	f, _ = os.Create("temp/xl/worksheets/sheet1.xml")
 	f.WriteString(`<worksheet><cols><col min="2" max="6" style="1" width="2.6" customWidth="1"></col></cols><sheetData></sheetData></worksheet>`)
 	f.Close()
-	sheet = NewSheet("sheet1", 0, 0)
+	sheet = newSheet("sheet1", 0, "rId1", "worksheets/sheet1.xml")
 	sheet.Open("temp")
 	defer sheet.Close()
 
