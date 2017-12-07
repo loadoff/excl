@@ -187,11 +187,13 @@ func (workbook *Workbook) OpenSheet(name string) (*Sheet, error) {
 		}
 		return sheet, nil
 	}
-	count := len(workbook.sheets)
-	sheetName := workbook.types.addSheet(count)
+	index := workbook.workbookRels.getSheetMaxIndex()
+	sheetName := workbook.types.addSheet(index)
 	rid := workbook.workbookRels.addSheet(sheetName)
+	target := workbook.workbookRels.getTarget(rid)
+
 	workbook.sheetsTag.Children = append(workbook.sheetsTag.Children, createSheetTag(name, rid, workbook.maxSheetID+1))
-	sheet := NewSheet(name, count, workbook.maxSheetID)
+	sheet := newSheet(name, workbook.maxSheetID, rid, target)
 	sheet.sharedStrings = workbook.SharedStrings
 	sheet.Styles = workbook.Styles
 	if err := sheet.Create(workbook.TempPath); err != nil {
@@ -345,13 +347,13 @@ func (workbook *Workbook) openWorkbook() error {
 	}
 	for i := range val.Sheets.Sheetlist {
 		sheet := &val.Sheets.Sheetlist[i]
-		index, _ := strconv.Atoi(strings.Replace(sheet.RID, "rId", "", 1))
+		target := workbook.workbookRels.getTarget(sheet.RID)
 		workbook.sheets = append(workbook.sheets,
 			&Sheet{
 				xml:           sheet,
 				Styles:        workbook.Styles,
 				sharedStrings: workbook.SharedStrings,
-				sheetIndex:    index,
+				target:        target,
 			})
 		sheetID, _ := strconv.Atoi(sheet.SheetID)
 		if workbook.maxSheetID < sheetID {

@@ -28,7 +28,7 @@ type Sheet struct {
 	tempSheetPath string
 	colInfos      colInfos
 	maxRow        int
-	sheetIndex    int
+	target        string
 }
 
 // SheetXML sheet.xml information
@@ -39,7 +39,7 @@ type SheetXML struct {
 	RID     string   `xml:"id,attr"`
 }
 
-// colInfo 列のスタイル情報
+// colInfo Column style information
 type colInfo struct {
 	min         int
 	max         int
@@ -50,22 +50,22 @@ type colInfo struct {
 
 type colInfos []colInfo
 
-// NewSheet create new sheet information.
-func NewSheet(name string, index int, maxSheetID int) *Sheet {
+// newSheet create new sheet information.
+func newSheet(name string, index int, rid string, target string) *Sheet {
 	return &Sheet{
 		xml: &SheetXML{
 			XMLName: xml.Name{Space: "", Local: "sheet"},
 			Name:    name,
-			SheetID: fmt.Sprintf("%d", maxSheetID+1),
-			RID:     fmt.Sprintf("rId%d", index+1),
+			SheetID: fmt.Sprintf("%d", index+1),
+			RID:     rid,
 		},
-		sheetIndex: index + 1,
+		target: target,
 	}
 }
 
-// Create シートを新規に作成する
+// Create create new sheet
 func (sheet *Sheet) Create(dir string) error {
-	f, err := os.Create(filepath.Join(dir, "xl", "worksheets", fmt.Sprintf("sheet%d.xml", sheet.sheetIndex)))
+	f, err := os.Create(filepath.Join(dir, "xl", sheet.target))
 	if err != nil {
 		return err
 	}
@@ -82,8 +82,8 @@ func (sheet *Sheet) Create(dir string) error {
 // Open open sheet.xml in directory
 func (sheet *Sheet) Open(dir string) error {
 	var err error
-	sheet.sheetPath = filepath.Join(dir, "xl", "worksheets", fmt.Sprintf("sheet%d.xml", sheet.sheetIndex))
-	sheet.tempSheetPath = filepath.Join(dir, "xl", "worksheets", fmt.Sprintf("__sheet%d.xml", sheet.sheetIndex))
+	sheet.sheetPath = filepath.Join(dir, "xl", sheet.target)
+	sheet.tempSheetPath = filepath.Join(dir, "xl", sheet.target+".tmp")
 	f, err := os.Open(sheet.sheetPath)
 	if err != nil {
 		return err
@@ -105,7 +105,7 @@ func (sheet *Sheet) Open(dir string) error {
 	return nil
 }
 
-// Close シートを閉じる
+// Close close sheet
 func (sheet *Sheet) Close() error {
 	var err error
 	if sheet == nil || sheet.opened == false {
@@ -219,7 +219,7 @@ func (sheet *Sheet) CreateRows(from int, to int) []*Row {
 	return sheet.Rows
 }
 
-// GetRow 行を取得する(インデックス情報は1から開始)
+// GetRow get row(from 1)
 func (sheet *Sheet) GetRow(rowNo int) *Row {
 	for _, row := range sheet.Rows {
 		if row.rowID == rowNo {
@@ -229,7 +229,7 @@ func (sheet *Sheet) GetRow(rowNo int) *Row {
 			break
 		}
 	}
-	// 行番号が存在しない行を作成する
+	// Cell is created if there is no cell NO.
 	attr := []xml.Attr{
 		xml.Attr{
 			Name:  xml.Name{Local: "r"},
@@ -262,7 +262,7 @@ func (sheet *Sheet) GetRow(rowNo int) *Row {
 	return row
 }
 
-// ShowGridlines グリッド線の表示非表示
+// ShowGridlines switch show/hide grid lines
 func (sheet *Sheet) ShowGridlines(show bool) {
 	if sheet.sheetView != nil {
 		if show {
@@ -286,17 +286,23 @@ func (sheet *Sheet) outputFirst() {
 	sheet.worksheet = nil
 }
 
-// OutputAll すべて出力する
+// OutputAll output all rows
 func (sheet *Sheet) OutputAll() {
 	if sheet.worksheet != nil {
 		sheet.outputFirst()
 	}
-	for _, row := range sheet.Rows {
+	var buffer bytes.Buffer
+	for i, row := range sheet.Rows {
 		if row != nil {
 			row.resetStyleIndex()
-			xml.NewEncoder(sheet.tempFile).Encode(row)
+			xml.NewEncoder(&buffer).Encode(sheet.Rows[i])
+			if i > 0 && i%100 == 0 {
+				sheet.tempFile.Write(buffer.Bytes())
+				buffer.Reset()
+			}
 		}
 	}
+	sheet.tempFile.Write(buffer.Bytes())
 	sheet.Rows = nil
 }
 
@@ -306,6 +312,7 @@ func (sheet *Sheet) OutputThroughRowNo(rowNo int) {
 	if sheet.worksheet != nil {
 		sheet.outputFirst()
 	}
+	var buffer bytes.Buffer
 	for i = 0; i < len(sheet.Rows); i++ {
 		if sheet.Rows[i] == nil {
 			continue
@@ -314,12 +321,19 @@ func (sheet *Sheet) OutputThroughRowNo(rowNo int) {
 			break
 		}
 		sheet.Rows[i].resetStyleIndex()
-		xml.NewEncoder(sheet.tempFile).Encode(sheet.Rows[i])
+		xml.NewEncoder(&buffer).Encode(sheet.Rows[i])
+		if i > 0 && i%100 == 0 {
+			sheet.tempFile.Write(buffer.Bytes())
+			buffer.Reset()
+		}
 	}
+	sheet.tempFile.Write(buffer.Bytes())
+	sheet.tempFile.Sync()
+
 	sheet.Rows = sheet.Rows[i:]
 }
 
-// getColsStyles 列に設定されているスタイルを取得する
+// getColsStyles obtain the style set in the column
 func getColInfos(tag *Tag) []colInfo {
 	var infos []colInfo
 	for _, child := range tag.Children {

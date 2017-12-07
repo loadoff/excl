@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -117,4 +119,49 @@ func (wbr *WorkbookRels) addSheet(name string) string {
 	}
 	wbr.rels.Rels = append(wbr.rels.Rels, rel)
 	return rel.ID
+}
+
+func (wbr *WorkbookRels) getTarget(rid string) string {
+	if wbr == nil {
+		return ""
+	}
+	for _, rel := range wbr.rels.Rels {
+		if rel.ID == rid {
+			return rel.Target
+		}
+	}
+	return ""
+}
+
+func (wbr *WorkbookRels) getSheetIndex(rid string) int {
+	if wbr == nil {
+		return -1
+	}
+	re := regexp.MustCompile(`\Aworksheets\/sheet([0-9]+)\.xml\z`)
+	for _, rel := range wbr.rels.Rels {
+		if rel.ID == rid {
+			vals := re.FindStringSubmatch(rel.Target)
+			if len(vals) != 2 {
+				return -1
+			}
+			index, _ := strconv.Atoi(vals[1])
+			return index
+		}
+	}
+	return -1
+}
+
+func (wbr *WorkbookRels) getSheetMaxIndex() int {
+	maxIndex := 0
+	re := regexp.MustCompile(`\Aworksheets\/sheet([0-9]+)\.xml\z`)
+	for _, rel := range wbr.rels.Rels {
+		val := re.FindStringSubmatch(rel.Target)
+		if len(val) == 2 {
+			index, _ := strconv.Atoi(val[1])
+			if index > maxIndex {
+				maxIndex = index
+			}
+		}
+	}
+	return maxIndex
 }
