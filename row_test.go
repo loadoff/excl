@@ -224,6 +224,22 @@ func TestRowResetStyleIndex(t *testing.T) {
 	row.resetStyleIndex()
 }
 
+func TestSetRowHeight(t *testing.T) {
+	tag := &Tag{Name: xml.Name{Local: "row"}}
+	row := &Row{row: tag}
+	row.SetHeight(1.23)
+	if val, err := row.row.getAttr("customHeight"); err != nil {
+		t.Error(`tag's customHeight attribute should be set but`, err)
+	} else if val != "1" {
+		t.Error(`tag's customHeight attribute should be 1 but`, val)
+	}
+	if val, err := row.row.getAttr("ht"); err != nil {
+		t.Error(`tag's ht attribute should be set but`, err)
+	} else if val != "1.2300" {
+		t.Error(`tag's ht attribute should be 1.2300 but`, val)
+	}
+}
+
 func BenchmarkNewRow(b *testing.B) {
 	row := &Row{rowID: 10}
 	row.CreateCells(1, b.N)

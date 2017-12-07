@@ -148,6 +148,12 @@ func (row *Row) SetDate(val time.Time, colNo int) *Cell {
 	return cell
 }
 
+// SetHeight set row height
+func (row *Row) SetHeight(height float64) {
+	row.row.setAttr("customHeight", "1")
+	row.row.setAttr("ht", strconv.FormatFloat(height, 'f', 4, 64))
+}
+
 // ColStringPosition obtain AtoZ column string from column no
 func ColStringPosition(num int) string {
 	atoz := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
@@ -167,7 +173,7 @@ func ColNumPosition(col string) int {
 	return num
 }
 
-// MarshalXML タグを作成しなおす
+// MarshalXML Create xml tags
 func (row *Row) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name = row.row.Name
 	start.Attr = row.row.Attr
